@@ -12,14 +12,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.dailystudio.vibecoding.driftopen.game.GameEngine
-import com.dailystudio.vibecoding.driftopen.game.models.GameState
-import com.dailystudio.vibecoding.driftopen.game.models.PowerUpType
+import com.dailystudio.vibecoding.driftopen.game.models.*
 
 @Composable
 fun GameScreen(engine: GameEngine) {
@@ -63,13 +63,17 @@ fun GameScreen(engine: GameEngine) {
 
             // Draw ship
             val ship = state.ship
+            val shipAlpha = if (ship.invincibilityFrames > 0) {
+                if ((ship.invincibilityFrames / 5) % 2 == 0) 0.3f else 0.7f
+            } else 1f
+            
             val shipPath = Path().apply {
                 moveTo(ship.x, ship.y - ship.height / 2)
                 lineTo(ship.x - ship.width / 2, ship.y + ship.height / 2)
                 lineTo(ship.x + ship.width / 2, ship.y + ship.height / 2)
                 close()
             }
-            drawPath(shipPath, Color.Cyan)
+            drawPath(shipPath, Color.Cyan.copy(alpha = shipAlpha))
 
             // Draw shield aura if active
             if (state.activePowerUp?.type == PowerUpType.SHIELD) {
@@ -83,36 +87,104 @@ fun GameScreen(engine: GameEngine) {
 
             // Draw aliens
             state.aliens.forEach { alien ->
-                drawRect(
-                    color = alien.color,
-                    topLeft = Offset(alien.x - alien.width / 2, alien.y - alien.height / 2),
-                    size = androidx.compose.ui.geometry.Size(alien.width, alien.height)
-                )
-                // Boss health indicator
-                if (alien.type == com.dailystudio.vibecoding.driftopen.game.models.AlienType.BOSS && alien.health > 0) {
+                val path = when (alien.type) {
+                    AlienType.NORMAL -> Path().apply {
+                        moveTo(alien.x, alien.y + alien.height / 2)
+                        lineTo(alien.x - alien.width / 2, alien.y - alien.height / 2)
+                        lineTo(alien.x + alien.width / 2, alien.y - alien.height / 2)
+                        close()
+                    }
+                    AlienType.FAST -> Path().apply {
+                        moveTo(alien.x, alien.y - alien.height / 2)
+                        lineTo(alien.x + alien.width / 2, alien.y)
+                        lineTo(alien.x, alien.y + alien.height / 2)
+                        lineTo(alien.x - alien.width / 2, alien.y)
+                        close()
+                    }
+                    AlienType.BOSS -> Path().apply {
+                        val w = alien.width / 2
+                        val h = alien.height / 2
+                        moveTo(alien.x, alien.y - h)
+                        lineTo(alien.x + w, alien.y - h / 2)
+                        lineTo(alien.x + w, alien.y + h / 2)
+                        lineTo(alien.x, alien.y + h)
+                        lineTo(alien.x - w, alien.y + h / 2)
+                        lineTo(alien.x - w, alien.y - h / 2)
+                        close()
+                    }
+                    AlienType.SUPERBOSS -> Path().apply {
+                        val w = alien.width / 2
+                        val h = alien.height / 2
+                        moveTo(alien.x, alien.y - h)
+                        lineTo(alien.x + w, alien.y - h * 0.5f)
+                        lineTo(alien.x + w * 0.8f, alien.y + h)
+                        lineTo(alien.x - w * 0.8f, alien.y + h)
+                        lineTo(alien.x - w, alien.y - h * 0.5f)
+                        close()
+                    }
+                }
+                
+                drawPath(path, color = alien.color)
+                
+                // Health bar
+                if (alien.health < alien.maxHealth) {
+                    val barWidth = alien.width * 0.8f
+                    val healthWidth = barWidth * (alien.health.toFloat() / alien.maxHealth)
+                    drawRect(
+                        color = Color.Gray,
+                        topLeft = Offset(alien.x - barWidth / 2, alien.y - alien.height / 2 - 15f),
+                        size = Size(barWidth, 6f)
+                    )
                     drawRect(
                         color = Color.Green,
-                        topLeft = Offset(alien.x - alien.width / 2, alien.y - alien.height / 2 - 10f),
-                        size = androidx.compose.ui.geometry.Size(alien.width * (alien.health / 3f), 4f)
+                        topLeft = Offset(alien.x - barWidth / 2, alien.y - alien.height / 2 - 15f),
+                        size = Size(healthWidth, 6f)
                     )
                 }
             }
 
             // Draw player bullets
             state.bullets.forEach { bullet ->
-                drawRect(
-                    color = Color.Yellow,
-                    topLeft = Offset(bullet.x - 4f, bullet.y - 15f),
-                    size = androidx.compose.ui.geometry.Size(8f, 30f)
-                )
+                when (bullet.type) {
+                    BulletType.LASER -> {
+                        drawRect(
+                            color = Color(0xFF00FFFF),
+                            topLeft = Offset(bullet.x - bullet.width / 2, bullet.y - bullet.height / 2),
+                            size = Size(bullet.width, bullet.height)
+                        )
+                    }
+                    BulletType.BOMB -> {
+                        drawCircle(
+                            color = Color(0xFFFF4500),
+                            radius = bullet.width / 2,
+                            center = Offset(bullet.x, bullet.y)
+                        )
+                    }
+                    BulletType.HOMING -> {
+                        val p = Path().apply {
+                            moveTo(bullet.x, bullet.y - bullet.height / 2)
+                            lineTo(bullet.x - bullet.width / 2, bullet.y + bullet.height / 2)
+                            lineTo(bullet.x + bullet.width / 2, bullet.y + bullet.height / 2)
+                            close()
+                        }
+                        drawPath(p, Color.White)
+                    }
+                    else -> {
+                        drawRect(
+                            color = Color.Yellow,
+                            topLeft = Offset(bullet.x - bullet.width / 2, bullet.y - bullet.height / 2),
+                            size = Size(bullet.width, bullet.height)
+                        )
+                    }
+                }
             }
 
             // Draw alien bullets
             state.alienBullets.forEach { bullet ->
                 drawRect(
                     color = Color.Red,
-                    topLeft = Offset(bullet.x - 4f, bullet.y),
-                    size = androidx.compose.ui.geometry.Size(8f, 30f)
+                    topLeft = Offset(bullet.x - 3f, bullet.y),
+                    size = Size(6f, 20f)
                 )
             }
 
@@ -122,6 +194,10 @@ fun GameScreen(engine: GameEngine) {
                     PowerUpType.SHIELD -> Color.Cyan
                     PowerUpType.DOUBLE_FIRE -> Color.Green
                     PowerUpType.RAPID_FIRE -> Color.Yellow
+                    PowerUpType.SPREAD_SHOT -> Color.Magenta
+                    PowerUpType.LASER_BEAM -> Color.Blue
+                    PowerUpType.HOMING_MISSILES -> Color.White
+                    PowerUpType.EXPLOSIVE_BOMBS -> Color(0xFFFF4500)
                 }
                 drawCircle(color, radius = powerUp.radius, center = Offset(powerUp.x, powerUp.y))
                 drawCircle(Color.White, radius = powerUp.radius * 0.7f, center = Offset(powerUp.x, powerUp.y), style = Stroke(width = 2f))
@@ -138,7 +214,7 @@ fun GameScreen(engine: GameEngine) {
         }
 
         // HUD: Score and Lives
-        if (state.phase == com.dailystudio.vibecoding.driftopen.game.models.GamePhase.PLAYING) {
+        if (state.phase == GamePhase.PLAYING) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -154,7 +230,7 @@ fun GameScreen(engine: GameEngine) {
                         style = MaterialTheme.typography.headlineSmall
                     )
                     Text(
-                        text = "LEVEL: ${state.level}",
+                        text = "LVL: ${state.level}",
                         color = Color.Yellow,
                         style = MaterialTheme.typography.headlineSmall
                     )
@@ -173,7 +249,7 @@ fun GameScreen(engine: GameEngine) {
                 // Power-up indicator
                 state.activePowerUp?.let { 
                     Text(
-                        text = "${it.type} ACTIVE: ${it.timeRemaining / 60}s",
+                        text = "${it.type.name.replace("_", " ")} ACTIVE: ${it.timeRemaining / 60}s",
                         color = Color.Green,
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(top = 8.dp)
@@ -184,7 +260,7 @@ fun GameScreen(engine: GameEngine) {
 
         // Overlays
         when (state.phase) {
-            com.dailystudio.vibecoding.driftopen.game.models.GamePhase.START -> {
+            GamePhase.START -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -203,7 +279,7 @@ fun GameScreen(engine: GameEngine) {
                     }
                 }
             }
-            com.dailystudio.vibecoding.driftopen.game.models.GamePhase.WIN -> {
+            GamePhase.WIN -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -227,7 +303,7 @@ fun GameScreen(engine: GameEngine) {
                     }
                 }
             }
-            com.dailystudio.vibecoding.driftopen.game.models.GamePhase.GAME_OVER -> {
+            GamePhase.GAME_OVER -> {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -246,7 +322,7 @@ fun GameScreen(engine: GameEngine) {
                     }
                 }
             }
-            com.dailystudio.vibecoding.driftopen.game.models.GamePhase.PLAYING -> { /* HUD is drawn above */ }
+            GamePhase.PLAYING -> { /* HUD is drawn above */ }
         }
     }
 }

@@ -18,7 +18,7 @@ data class GameState(
     val powerUps: List<PowerUp> = emptyList(),
     val activePowerUp: ActivePowerUp? = null,
     val score: Int = 0,
-    val lives: Int = 3,
+    val lives: Int = 5,
     val level: Int = 1,
     val phase: GamePhase = GamePhase.START,
     val screenWidth: Float = 0f,
@@ -39,7 +39,8 @@ data class PlayerShip(
     val y: Float = 0f,
     val width: Float = 60f,
     val height: Float = 60f,
-    val color: Color = Color.Cyan
+    val color: Color = Color.Cyan,
+    val invincibilityFrames: Int = 0
 ) {
     fun getRect() = Rect(Offset(x - width / 2, y - height / 2), Offset(x + width / 2, y + height / 2))
 }
@@ -55,6 +56,7 @@ data class Alien(
     val color: Color = Color.Red,
     val type: AlienType = AlienType.NORMAL,
     val health: Int = 1,
+    val maxHealth: Int = 1,
     val isAttacking: Boolean = false,
     val attackPhase: Float = 0f
 ) {
@@ -62,15 +64,23 @@ data class Alien(
 }
 
 enum class AlienType {
-    NORMAL, FAST, BOSS
+    NORMAL, FAST, BOSS, SUPERBOSS
+}
+
+enum class BulletType {
+    NORMAL, SPREAD, LASER, HOMING, BOMB
 }
 
 data class Bullet(
     val x: Float,
     val y: Float,
+    val vx: Float = 0f,
     val width: Float = 6f,
     val height: Float = 15f,
-    val speed: Float = 15f
+    val speed: Float = 15f,
+    val type: BulletType = BulletType.NORMAL,
+    val pierceCount: Int = 1,
+    val targetId: Int? = null
 ) {
     fun getRect() = Rect(Offset(x - width / 2, y - height / 2), Offset(x + width / 2, y + height / 2))
 }
@@ -83,7 +93,7 @@ data class Star(
 )
 
 enum class PowerUpType {
-    SHIELD, DOUBLE_FIRE, RAPID_FIRE
+    SHIELD, DOUBLE_FIRE, RAPID_FIRE, SPREAD_SHOT, LASER_BEAM, HOMING_MISSILES, EXPLOSIVE_BOMBS
 }
 
 data class PowerUp(

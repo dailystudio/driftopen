@@ -28,11 +28,15 @@ This is a modern Android implementation of the classic arcade game "DriftOpen" b
 - [x] **Power-ups**: Add collectible power-ups (e.g., double fire, shield, speed boost).
 - [x] **Levels**: Introduce multiple levels with increasing difficulty and different alien formations.
 - [x] **Attack Patterns**: More complex diving maneuvers for attacking aliens.
+- [x] **Difficulty Balancing**: Gradual introduction of alien types (Normal on Lvl 1, Fast on Lvl 2, Boss on Lvl 3) and smoother scaling of attack rates.
+- [x] **Superboss Encounters**: A massive, high-health `SUPERBOSS` enemy that appears every 5 levels, featuring unique movement and a "shotgun" blast attack.
+- [x] **Advanced Player Weapons**: Introduce powerful new weapon types (Spread Shot, Laser Beam, Homing Missiles, Explosive Bombs).
 
 ### Visuals & Audio
 - [ ] **Sound Effects**: Add classic arcade sounds for shooting, explosions, and diving.
 - [ ] **Music**: Background chiptune music.
 - [ ] **Enhanced Graphics**: Use vector graphics or sprite sheets instead of simple shapes.
+- [x] **Distinct Alien Shapes**: Replace simple rectangles with unique Compose `Path` shapes for each alien type (e.g., Chevron for Normal, Diamond for Fast, Hexagon for Boss).
 - [ ] **Screen Shake**: Add subtle screen shake on player hit.
 
 ### Technical Tasks
