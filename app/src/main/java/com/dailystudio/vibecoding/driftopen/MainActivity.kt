@@ -2,6 +2,7 @@ package com.dailystudio.vibecoding.driftopen
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -35,6 +36,10 @@ class MainActivity : ComponentActivity() {
 
             val gameState by engine.gameState.collectAsState()
             val highScore by scoreManager.highScoreFlow.collectAsState(initial = 0)
+
+            BackHandler(enabled = gameState.phase == GamePhase.PLAYING) {
+                engine.pauseGame()
+            }
 
             // Sync high score to engine
             LaunchedEffect(highScore) {

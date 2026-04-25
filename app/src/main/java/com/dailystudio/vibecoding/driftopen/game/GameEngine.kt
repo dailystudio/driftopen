@@ -454,28 +454,26 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                     nextActivePowerUp = null // Consume shield
                     soundManager?.playSound("hit")
                     if (hitByBullet != null) updatedAlienBullets = updatedAlienBullets - hitByBullet
+                } else if (state.activeCheats.contains(CheatType.INVINCIBILITY) || nextActivePowerUp?.type == PowerUpType.INVINCIBILITY) {
+                    // Cheat or Power-up active: don't lose lives, but still show feedback
+                    finalShake = 10f
+                    soundManager?.playSound("hit")
+                    currentExplosions.add(Explosion(updatedShip.x, updatedShip.y - 120f, Color.White, radius = 20f))
+                    finalShip = updatedShip.copy(invincibilityFrames = 40)
                 } else {
-                    if (state.activeCheats.contains(CheatType.INVINCIBILITY)) {
-                        // Cheat active: don't lose lives, but still show explosion and shake
-                        finalShake = 10f
-                        soundManager?.playSound("hit")
-                        currentExplosions.add(Explosion(updatedShip.x, updatedShip.y - 120f, Color.White, radius = 20f))
-                        finalShip = updatedShip.copy(invincibilityFrames = 40)
-                    } else {
-                        newLives -= 1
-                        finalShake = 15f
-                        soundManager?.playSound("hit")
-                        currentExplosions.add(Explosion(updatedShip.x, updatedShip.y - 120f, Color.White, radius = 20f))
-                        updatedAlienBullets = emptyList()
-                        finalShip = updatedShip.copy(invincibilityFrames = 60) // 1 second invincibility
-                        
-                        if (hitByAlien != null && hitByAlien.type != AlienType.SUPERBOSS) {
-                            nextAliens.remove(hitByAlien)
-                        }
-                        
-                        if (newLives <= 0) {
-                            nextPhase = GamePhase.GAME_OVER
-                        }
+                    newLives -= 1
+                    finalShake = 15f
+                    soundManager?.playSound("hit")
+                    currentExplosions.add(Explosion(updatedShip.x, updatedShip.y - 120f, Color.White, radius = 20f))
+                    updatedAlienBullets = emptyList()
+                    finalShip = updatedShip.copy(invincibilityFrames = 60) // 1 second invincibility
+                    
+                    if (hitByAlien != null && hitByAlien.type != AlienType.SUPERBOSS) {
+                        nextAliens.remove(hitByAlien)
+                    }
+                    
+                    if (newLives <= 0) {
+                        nextPhase = GamePhase.GAME_OVER
                     }
                 }
             }

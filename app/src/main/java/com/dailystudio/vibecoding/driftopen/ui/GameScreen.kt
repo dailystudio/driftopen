@@ -206,6 +206,7 @@ fun GameScreen(engine: GameEngine) {
                     PowerUpType.LASER_BEAM -> Color.Blue
                     PowerUpType.HOMING_MISSILES -> Color.White
                     PowerUpType.EXPLOSIVE_BOMBS -> Color(0xFFFF4500)
+                    PowerUpType.INVINCIBILITY -> Color(0xFFFFD700) // Gold
                 }
                 drawCircle(color, radius = powerUp.radius, center = Offset(powerUp.x, powerUp.y))
                 drawCircle(Color.White, radius = powerUp.radius * 0.7f, center = Offset(powerUp.x, powerUp.y), style = Stroke(width = 2f))
@@ -290,6 +291,33 @@ fun GameScreen(engine: GameEngine) {
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Game Logo
+                    Canvas(modifier = Modifier.size(150.dp)) {
+                        val w = size.width
+                        val h = size.height
+                        val logoPath = Path().apply {
+                            // Futuristic G-shape / Wings
+                            moveTo(w * 0.1f, h * 0.5f)
+                            lineTo(w * 0.3f, h * 0.2f)
+                            lineTo(w * 0.7f, h * 0.2f)
+                            lineTo(w * 0.9f, h * 0.5f)
+                            lineTo(w * 0.7f, h * 0.8f)
+                            lineTo(w * 0.3f, h * 0.8f)
+                            close()
+                            
+                            // Core
+                            addOval(androidx.compose.ui.geometry.Rect(w * 0.4f, h * 0.4f, w * 0.6f, h * 0.6f))
+                        }
+                        drawPath(logoPath, Color.Cyan, style = Stroke(width = 4.dp.toPx()))
+                        drawPath(logoPath, Color.Cyan.copy(alpha = 0.3f))
+                        
+                        // Extra wing details
+                        drawLine(Color.Cyan, Offset(w * 0.3f, h * 0.2f), Offset(w * 0.1f, h * 0.1f), strokeWidth = 2.dp.toPx())
+                        drawLine(Color.Cyan, Offset(w * 0.7f, h * 0.2f), Offset(w * 0.9f, h * 0.1f), strokeWidth = 2.dp.toPx())
+                    }
+                    
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
                     Text(
                         text = "DRIFTOPEN",
                         color = Color.Cyan,
@@ -375,8 +403,12 @@ fun GameScreen(engine: GameEngine) {
                         style = MaterialTheme.typography.displayLarge
                     )
                     Spacer(modifier = Modifier.height(32.dp))
-                    Button(onClick = { engine.resumeGame() }) {
-                        Text("RESUME")
+                    Button(onClick = { engine.resumeGame() }, modifier = Modifier.width(200.dp)) {
+                        Text("CONTINUE")
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedButton(onClick = { engine.resetToStart() }, modifier = Modifier.width(200.dp)) {
+                        Text("RETURN TO TITLE", color = Color.White)
                     }
                 }
             }
