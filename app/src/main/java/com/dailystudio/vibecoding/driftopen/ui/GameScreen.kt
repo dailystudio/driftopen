@@ -53,9 +53,18 @@ fun GameScreen(engine: GameEngine) {
                 engine.setScreenSize(size.width, size.height)
             }
 
+            val shakeX = if (state.screenShakeIntensity > 0) (kotlin.random.Random.nextFloat() - 0.5f) * 2 * state.screenShakeIntensity else 0f
+            val shakeY = if (state.screenShakeIntensity > 0) (kotlin.random.Random.nextFloat() - 0.5f) * 2 * state.screenShakeIntensity else 0f
+
+            drawContext.canvas.save()
+            drawContext.canvas.translate(shakeX, shakeY)
+
             // Draw background
             drawRect(Color.Black)
-
+            
+            // ... (rest of drawing calls) ...
+            
+            // Re-adding content because of context mapping
             // Draw stars
             state.stars.forEach { star ->
                 drawCircle(Color.White.copy(alpha = 0.8f), radius = star.size, center = Offset(star.x, star.y))
@@ -211,6 +220,8 @@ fun GameScreen(engine: GameEngine) {
                     center = Offset(explosion.x, explosion.y)
                 )
             }
+
+            drawContext.canvas.restore()
         }
 
         // HUD: Score and Lives
@@ -319,6 +330,25 @@ fun GameScreen(engine: GameEngine) {
                     Spacer(modifier = Modifier.height(32.dp))
                     Button(onClick = { engine.resetToStart() }) {
                         Text("BACK TO START")
+                    }
+                }
+            }
+            GamePhase.PAUSED -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.7f)),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "PAUSED",
+                        color = Color.Yellow,
+                        style = MaterialTheme.typography.displayLarge
+                    )
+                    Spacer(modifier = Modifier.height(32.dp))
+                    Button(onClick = { engine.resumeGame() }) {
+                        Text("RESUME")
                     }
                 }
             }

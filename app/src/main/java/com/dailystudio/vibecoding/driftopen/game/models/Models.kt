@@ -5,7 +5,7 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 
 enum class GamePhase {
-    START, PLAYING, GAME_OVER, WIN
+    START, PLAYING, PAUSED, GAME_OVER, WIN
 }
 
 data class GameState(
@@ -20,6 +20,7 @@ data class GameState(
     val score: Int = 0,
     val lives: Int = 5,
     val level: Int = 1,
+    val screenShakeIntensity: Float = 0f,
     val phase: GamePhase = GamePhase.START,
     val screenWidth: Float = 0f,
     val screenHeight: Float = 0f

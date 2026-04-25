@@ -33,11 +33,11 @@ This is a modern Android implementation of the classic arcade game "DriftOpen" b
 - [x] **Advanced Player Weapons**: Introduce powerful new weapon types (Spread Shot, Laser Beam, Homing Missiles, Explosive Bombs).
 
 ### Visuals & Audio
-- [ ] **Sound Effects**: Add classic arcade sounds for shooting, explosions, and diving.
-- [ ] **Music**: Background chiptune music.
+- [x] **Sound Effects**: Implemented `SoundManager` architecture with `SoundPool` triggers. (Requires assets in `res/raw`).
+- [x] **Music**: Implemented `MediaPlayer` background logic in `SoundManager`. (Requires assets in `res/raw`).
 - [ ] **Enhanced Graphics**: Use vector graphics or sprite sheets instead of simple shapes.
 - [x] **Distinct Alien Shapes**: Replace simple rectangles with unique Compose `Path` shapes for each alien type (e.g., Chevron for Normal, Diamond for Fast, Hexagon for Boss).
-- [ ] **Screen Shake**: Add subtle screen shake on player hit.
+- [x] **Screen Shake**: Implemented dynamic screen shake on player hit.
 
 ### Technical Tasks
 - [ ] **Performance Profiling**: Optimize `Canvas` rendering for high alien counts.

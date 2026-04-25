@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.random.Random
 
-class GameEngine {
+class GameEngine(private val soundManager: SoundManager? = null) {
     private val _gameState = MutableStateFlow(GameState())
     val gameState = _gameState.asStateFlow()
 
@@ -155,6 +155,7 @@ class GameEngine {
                 }
                 s.copy(bullets = newBullets)
             }
+            soundManager?.playSound("shoot")
             lastShootTime = now
         }
     }
@@ -181,6 +182,18 @@ class GameEngine {
         _gameState.update { it.copy(phase = GamePhase.START) }
     }
 
+    fun pauseGame() {
+        _gameState.update { 
+            if (it.phase == GamePhase.PLAYING) it.copy(phase = GamePhase.PAUSED) else it
+        }
+    }
+
+    fun resumeGame() {
+        _gameState.update { 
+            if (it.phase == GamePhase.PAUSED) it.copy(phase = GamePhase.PLAYING) else it
+        }
+    }
+
     fun update(dtNanos: Long) {
         val currentState = _gameState.value
         if (currentState.phase != GamePhase.PLAYING) return
@@ -193,6 +206,9 @@ class GameEngine {
         }
 
         _gameState.update { state ->
+            // Decay screen shake
+            val nextShake = (state.screenShakeIntensity * 0.9f).let { if (it < 0.1f) 0f else it }
+
             // Update PowerUp timer
             val updatedActivePowerUp = state.activePowerUp?.let {
                 if (it.timeRemaining > 0) it.copy(timeRemaining = it.timeRemaining - 1) else null
@@ -360,6 +376,7 @@ class GameEngine {
                         }
 
                         if (updatedHealth <= 0) {
+                            soundManager?.playSound("explosion")
                             scoreGain += when(hitAlien.type) {
                                 AlienType.SUPERBOSS -> 5000
                                 AlienType.BOSS -> 500
@@ -383,6 +400,7 @@ class GameEngine {
             // Collect powerups
             val collectedPowerUps = currentPowerUps.filter { it.getRect().overlaps(state.ship.getRect()) }
             if (collectedPowerUps.isNotEmpty()) {
+                soundManager?.playSound("powerup")
                 nextActivePowerUp = ActivePowerUp(collectedPowerUps.last().type)
                 currentPowerUps.removeAll(collectedPowerUps)
             }
@@ -392,12 +410,16 @@ class GameEngine {
             val hitByAlien = if (updatedShip.invincibilityFrames == 0) nextAliens.find { it.getRect().overlaps(updatedShip.getRect()) } else null
 
             var finalShip = updatedShip
+            var finalShake = nextShake
             if (hitByBullet != null || hitByAlien != null) {
                 if (nextActivePowerUp?.type == PowerUpType.SHIELD) {
                     nextActivePowerUp = null // Consume shield
+                    soundManager?.playSound("hit")
                     if (hitByBullet != null) updatedAlienBullets = updatedAlienBullets - hitByBullet
                 } else {
                     newLives -= 1
+                    finalShake = 15f
+                    soundManager?.playSound("hit")
                     currentExplosions.add(Explosion(updatedShip.x, updatedShip.y, Color.White, radius = 20f))
                     updatedAlienBullets = emptyList()
                     finalShip = updatedShip.copy(invincibilityFrames = 60) // 1 second invincibility
@@ -429,6 +451,7 @@ class GameEngine {
                 score = state.score + scoreGain,
                 lives = newLives,
                 level = nextLevel,
+                screenShakeIntensity = finalShake,
                 phase = nextPhase
             )
         }
