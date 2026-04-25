@@ -11,6 +11,25 @@ class GameEngine(private val soundManager: SoundManager? = null) {
     private val _gameState = MutableStateFlow(GameState())
     val gameState = _gameState.asStateFlow()
 
+    private val cheatManager = CheatManager()
+
+    init {
+        // Sync cheats from manager to game state
+        // In a real app we might collect this in a scope, 
+        // but since updates are driven by the game loop or UI calls, 
+        // we can just update it whenever we need or on a separate collector.
+        // For simplicity, we'll check it in the update loop or when it changes.
+    }
+
+    fun recordStartScreenTap() {
+        cheatManager.onStartScreenTap()
+        _gameState.update { it.copy(activeCheats = cheatManager.activatedCheats.value) }
+    }
+
+    fun setHighScore(score: Int) {
+        _gameState.update { it.copy(highScore = score) }
+    }
+
     private var lastShootTime = 0L
     private var alienMoveDirection = 1f
     private var formationX = 0f
@@ -60,7 +79,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
 
         val aliens = mutableListOf<Alien>()
         val rows = 4
-        val cols = 8
+        val cols = 6
         formationX = (screenWidth - (cols - 1) * spacing) / 2
         val startY = 150f
 
@@ -108,10 +127,11 @@ class GameEngine(private val soundManager: SoundManager? = null) {
         _gameState.update { it.copy(aliens = aliens) }
     }
 
-    fun moveShipRelative(deltaX: Float) {
+    fun moveShipRelative(deltaX: Float, deltaY: Float) {
         _gameState.update { state ->
             val newX = (state.ship.x + deltaX).coerceIn(state.ship.width / 2, state.screenWidth - state.ship.width / 2)
-            state.copy(ship = state.ship.copy(x = newX))
+            val newY = (state.ship.y + deltaY).coerceIn(state.screenHeight * 0.4f, state.screenHeight - state.ship.height / 2)
+            state.copy(ship = state.ship.copy(x = newX, y = newY))
         }
     }
 
@@ -125,7 +145,8 @@ class GameEngine(private val soundManager: SoundManager? = null) {
 
         if (now - lastShootTime > cooldown) {
             _gameState.update { s ->
-                val bulletY = s.ship.y - s.ship.height / 2
+                val visualY = s.ship.y - 120f
+                val bulletY = visualY - s.ship.height / 2
                 val newBullets = when (s.activePowerUp?.type) {
                     PowerUpType.DOUBLE_FIRE -> {
                         s.bullets + listOf(
@@ -270,10 +291,12 @@ class GameEngine(private val soundManager: SoundManager? = null) {
 
             var nextAliens = state.aliens.map { alien ->
                 if (alien.type == AlienType.SUPERBOSS) {
-                    var nx = alien.x + alienMoveDirection * 4f
+                    val healthPct = alien.health.toFloat() / alien.maxHealth
+                    val speedScale = 1f + (1f - healthPct) * 1.5f
+                    var nx = alien.x + alienMoveDirection * 4f * speedScale
                     if (nx < 150f || nx > state.screenWidth - 150f) {
                         alienMoveDirection *= -1
-                        nx = alien.x + alienMoveDirection * 4f
+                        nx = alien.x + alienMoveDirection * 4f * speedScale
                     }
                     alien.copy(x = nx)
                 } else if (alien.isAttacking) {
@@ -325,11 +348,24 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 val shooter = nextAliens.random()
                 if (shooter.y > 0) {
                     if (shooter.type == AlienType.SUPERBOSS) {
-                        updatedAlienBullets = updatedAlienBullets + listOf(
-                            Bullet(shooter.x - 40f, shooter.y + 40f, speed = 10f),
-                            Bullet(shooter.x, shooter.y + 60f, speed = 12f),
-                            Bullet(shooter.x + 40f, shooter.y + 40f, speed = 10f)
-                        )
+                        val healthPct = shooter.health.toFloat() / shooter.maxHealth
+                        if (healthPct < 0.5f) {
+                            // 5-way spread
+                            updatedAlienBullets = updatedAlienBullets + listOf(
+                                Bullet(shooter.x - 60f, shooter.y + 40f, vx = -4f, speed = 8f),
+                                Bullet(shooter.x - 30f, shooter.y + 60f, vx = -2f, speed = 10f),
+                                Bullet(shooter.x, shooter.y + 80f, vx = 0f, speed = 12f),
+                                Bullet(shooter.x + 30f, shooter.y + 60f, vx = 2f, speed = 10f),
+                                Bullet(shooter.x + 60f, shooter.y + 40f, vx = 4f, speed = 8f)
+                            )
+                        } else {
+                            // 3-way spread
+                            updatedAlienBullets = updatedAlienBullets + listOf(
+                                Bullet(shooter.x - 40f, shooter.y + 40f, speed = 10f),
+                                Bullet(shooter.x, shooter.y + 60f, speed = 12f),
+                                Bullet(shooter.x + 40f, shooter.y + 40f, speed = 10f)
+                            )
+                        }
                     } else {
                         updatedAlienBullets = updatedAlienBullets + Bullet(shooter.x, shooter.y + shooter.height / 2)
                     }
@@ -384,11 +420,13 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                             }
                             currentExplosions.add(Explosion(hitAlien.x, hitAlien.y, hitAlien.color))
                             
-                            // Drop powerup
+                            // Death drop
                             if (Random.nextInt(100) < 15) {
-                                val types = PowerUpType.values()
-                                currentPowerUps.add(PowerUp(hitAlien.x, hitAlien.y, types.random()))
+                                currentPowerUps.add(PowerUp(hitAlien.x, hitAlien.y, PowerUpType.values().random()))
                             }
+                        } else if (hitAlien.type == AlienType.SUPERBOSS && Random.nextInt(100) < 30) {
+                            // Mid-hit drop for Superboss
+                            currentPowerUps.add(PowerUp(hitAlien.x, hitAlien.y, PowerUpType.values().random()))
                         }
                     }
                 }
@@ -398,7 +436,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             finalBullets.removeAll(bulletsToRemove)
             
             // Collect powerups
-            val collectedPowerUps = currentPowerUps.filter { it.getRect().overlaps(state.ship.getRect()) }
+            val collectedPowerUps = currentPowerUps.filter { it.getRect().overlaps(updatedShip.getVisualRect()) }
             if (collectedPowerUps.isNotEmpty()) {
                 soundManager?.playSound("powerup")
                 nextActivePowerUp = ActivePowerUp(collectedPowerUps.last().type)
@@ -406,8 +444,8 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             }
 
             // Player hit detection
-            val hitByBullet = if (updatedShip.invincibilityFrames == 0) updatedAlienBullets.find { it.getRect().overlaps(updatedShip.getRect()) } else null
-            val hitByAlien = if (updatedShip.invincibilityFrames == 0) nextAliens.find { it.getRect().overlaps(updatedShip.getRect()) } else null
+            val hitByBullet = if (updatedShip.invincibilityFrames == 0) updatedAlienBullets.find { it.getRect().overlaps(updatedShip.getVisualRect()) } else null
+            val hitByAlien = if (updatedShip.invincibilityFrames == 0) nextAliens.find { it.getRect().overlaps(updatedShip.getVisualRect()) } else null
 
             var finalShip = updatedShip
             var finalShake = nextShake
@@ -417,19 +455,27 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                     soundManager?.playSound("hit")
                     if (hitByBullet != null) updatedAlienBullets = updatedAlienBullets - hitByBullet
                 } else {
-                    newLives -= 1
-                    finalShake = 15f
-                    soundManager?.playSound("hit")
-                    currentExplosions.add(Explosion(updatedShip.x, updatedShip.y, Color.White, radius = 20f))
-                    updatedAlienBullets = emptyList()
-                    finalShip = updatedShip.copy(invincibilityFrames = 60) // 1 second invincibility
-                    
-                    if (hitByAlien != null && hitByAlien.type != AlienType.SUPERBOSS) {
-                        nextAliens.remove(hitByAlien)
-                    }
-                    
-                    if (newLives <= 0) {
-                        nextPhase = GamePhase.GAME_OVER
+                    if (state.activeCheats.contains(CheatType.INVINCIBILITY)) {
+                        // Cheat active: don't lose lives, but still show explosion and shake
+                        finalShake = 10f
+                        soundManager?.playSound("hit")
+                        currentExplosions.add(Explosion(updatedShip.x, updatedShip.y - 120f, Color.White, radius = 20f))
+                        finalShip = updatedShip.copy(invincibilityFrames = 40)
+                    } else {
+                        newLives -= 1
+                        finalShake = 15f
+                        soundManager?.playSound("hit")
+                        currentExplosions.add(Explosion(updatedShip.x, updatedShip.y - 120f, Color.White, radius = 20f))
+                        updatedAlienBullets = emptyList()
+                        finalShip = updatedShip.copy(invincibilityFrames = 60) // 1 second invincibility
+                        
+                        if (hitByAlien != null && hitByAlien.type != AlienType.SUPERBOSS) {
+                            nextAliens.remove(hitByAlien)
+                        }
+                        
+                        if (newLives <= 0) {
+                            nextPhase = GamePhase.GAME_OVER
+                        }
                     }
                 }
             }

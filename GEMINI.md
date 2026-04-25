@@ -41,7 +41,7 @@ This is a modern Android implementation of the classic arcade game "DriftOpen" b
 
 ### Technical Tasks
 - [ ] **Performance Profiling**: Optimize `Canvas` rendering for high alien counts.
-- [ ] **Save State**: Persist high scores using DataStore or Room.
+- [x] **Save State**: Persist high scores using Jetpack DataStore.
 - [ ] **Unit Tests**: Add tests for collision logic and state transitions in `GameEngine`.
 
 ## Tech Stack

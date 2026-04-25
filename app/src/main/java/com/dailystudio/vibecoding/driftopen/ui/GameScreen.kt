@@ -40,7 +40,7 @@ fun GameScreen(engine: GameEngine) {
                 .pointerInput(Unit) {
                     detectDragGestures { change, dragAmount ->
                         change.consume()
-                        engine.moveShipRelative(dragAmount.x)
+                        engine.moveShipRelative(dragAmount.x, dragAmount.y)
                     }
                 }
                 .pointerInput(Unit) {
@@ -62,34 +62,33 @@ fun GameScreen(engine: GameEngine) {
             // Draw background
             drawRect(Color.Black)
             
-            // ... (rest of drawing calls) ...
-            
-            // Re-adding content because of context mapping
             // Draw stars
             state.stars.forEach { star ->
                 drawCircle(Color.White.copy(alpha = 0.8f), radius = star.size, center = Offset(star.x, star.y))
             }
 
-            // Draw ship
+            // Draw ship (Offsetting visually so it's above the finger)
             val ship = state.ship
+            val visualY = ship.y - 120f // Move visually 120 pixels up from touch point
+            
             val shipAlpha = if (ship.invincibilityFrames > 0) {
                 if ((ship.invincibilityFrames / 5) % 2 == 0) 0.3f else 0.7f
             } else 1f
             
             val shipPath = Path().apply {
-                moveTo(ship.x, ship.y - ship.height / 2)
-                lineTo(ship.x - ship.width / 2, ship.y + ship.height / 2)
-                lineTo(ship.x + ship.width / 2, ship.y + ship.height / 2)
+                moveTo(ship.x, visualY - ship.height / 2)
+                lineTo(ship.x - ship.width / 2, visualY + ship.height / 2)
+                lineTo(ship.x + ship.width / 2, visualY + ship.height / 2)
                 close()
             }
             drawPath(shipPath, Color.Cyan.copy(alpha = shipAlpha))
 
-            // Draw shield aura if active
+            // Draw shield aura if active (using visualY)
             if (state.activePowerUp?.type == PowerUpType.SHIELD) {
                 drawCircle(
                     color = Color.Cyan.copy(alpha = 0.4f),
                     radius = ship.width * 0.8f,
-                    center = Offset(ship.x, ship.y),
+                    center = Offset(ship.x, visualY),
                     style = Stroke(width = 4f)
                 )
             }
@@ -235,11 +234,18 @@ fun GameScreen(engine: GameEngine) {
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = "SCORE: ${state.score}",
-                        color = Color.White,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
+                    Column {
+                        Text(
+                            text = "SCORE: ${state.score}",
+                            color = Color.White,
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Text(
+                            text = "HI-SCORE: ${state.highScore}",
+                            color = Color.Gray,
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
                     Text(
                         text = "LVL: ${state.level}",
                         color = Color.Yellow,
@@ -275,7 +281,12 @@ fun GameScreen(engine: GameEngine) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.8f)),
+                        .background(Color.Black.copy(alpha = 0.8f))
+                        .pointerInput(Unit) {
+                            detectTapGestures {
+                                engine.recordStartScreenTap()
+                            }
+                        },
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -284,6 +295,18 @@ fun GameScreen(engine: GameEngine) {
                         color = Color.Cyan,
                         style = MaterialTheme.typography.displayLarge
                     )
+                    Text(
+                        text = "HI-SCORE: ${state.highScore}",
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    if (state.activeCheats.contains(com.dailystudio.vibecoding.driftopen.game.models.CheatType.INVINCIBILITY)) {
+                        Text(
+                            text = "CHEATS ACTIVE: INVINCIBILITY",
+                            color = Color.Red,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
                     Spacer(modifier = Modifier.height(32.dp))
                     Button(onClick = { engine.startGame() }) {
                         Text("START GAME")
@@ -307,6 +330,11 @@ fun GameScreen(engine: GameEngine) {
                         text = "FINAL SCORE: ${state.score}",
                         color = Color.White,
                         style = MaterialTheme.typography.headlineMedium
+                    )
+                    Text(
+                        text = "HI-SCORE: ${state.highScore}",
+                        color = Color.Gray,
+                        style = MaterialTheme.typography.headlineSmall
                     )
                     Spacer(modifier = Modifier.height(32.dp))
                     Button(onClick = { engine.resetToStart() }) {

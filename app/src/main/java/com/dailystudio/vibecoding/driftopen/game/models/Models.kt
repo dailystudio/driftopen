@@ -8,6 +8,10 @@ enum class GamePhase {
     START, PLAYING, PAUSED, GAME_OVER, WIN
 }
 
+enum class CheatType {
+    INVINCIBILITY
+}
+
 data class GameState(
     val ship: PlayerShip = PlayerShip(),
     val aliens: List<Alien> = emptyList(),
@@ -17,7 +21,9 @@ data class GameState(
     val explosions: List<Explosion> = emptyList(),
     val powerUps: List<PowerUp> = emptyList(),
     val activePowerUp: ActivePowerUp? = null,
+    val activeCheats: Set<CheatType> = emptySet(),
     val score: Int = 0,
+    val highScore: Int = 0,
     val lives: Int = 5,
     val level: Int = 1,
     val screenShakeIntensity: Float = 0f,
@@ -44,6 +50,7 @@ data class PlayerShip(
     val invincibilityFrames: Int = 0
 ) {
     fun getRect() = Rect(Offset(x - width / 2, y - height / 2), Offset(x + width / 2, y + height / 2))
+    fun getVisualRect() = Rect(Offset(x - width / 2, (y - 120f) - height / 2), Offset(x + width / 2, (y - 120f) + height / 2))
 }
 
 data class Alien(

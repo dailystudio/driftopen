@@ -45,6 +45,10 @@ class SoundManager(private val context: Context) {
                 bgPlayer = MediaPlayer.create(context, R.raw.bg_music)
                 bgPlayer?.isLooping = true
                 bgPlayer?.setVolume(0.8f, 0.8f)
+                // Explicitly set completion listener to ensure looping
+                bgPlayer?.setOnCompletionListener {
+                    it.start()
+                }
                 bgPlayer?.start()
             } catch (e: Exception) {
                 e.printStackTrace()
