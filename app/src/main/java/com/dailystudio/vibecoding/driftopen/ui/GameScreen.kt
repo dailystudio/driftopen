@@ -14,10 +14,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import com.dailystudio.vibecoding.driftopen.game.GameEngine
 import com.dailystudio.vibecoding.driftopen.game.models.GameState
+import com.dailystudio.vibecoding.driftopen.game.models.PowerUpType
 
 @Composable
 fun GameScreen(engine: GameEngine) {
@@ -69,6 +71,16 @@ fun GameScreen(engine: GameEngine) {
             }
             drawPath(shipPath, Color.Cyan)
 
+            // Draw shield aura if active
+            if (state.activePowerUp?.type == PowerUpType.SHIELD) {
+                drawCircle(
+                    color = Color.Cyan.copy(alpha = 0.4f),
+                    radius = ship.width * 0.8f,
+                    center = Offset(ship.x, ship.y),
+                    style = Stroke(width = 4f)
+                )
+            }
+
             // Draw aliens
             state.aliens.forEach { alien ->
                 drawRect(
@@ -76,6 +88,14 @@ fun GameScreen(engine: GameEngine) {
                     topLeft = Offset(alien.x - alien.width / 2, alien.y - alien.height / 2),
                     size = androidx.compose.ui.geometry.Size(alien.width, alien.height)
                 )
+                // Boss health indicator
+                if (alien.type == com.dailystudio.vibecoding.driftopen.game.models.AlienType.BOSS && alien.health > 0) {
+                    drawRect(
+                        color = Color.Green,
+                        topLeft = Offset(alien.x - alien.width / 2, alien.y - alien.height / 2 - 10f),
+                        size = androidx.compose.ui.geometry.Size(alien.width * (alien.health / 3f), 4f)
+                    )
+                }
             }
 
             // Draw player bullets
@@ -96,6 +116,17 @@ fun GameScreen(engine: GameEngine) {
                 )
             }
 
+            // Draw power-ups
+            state.powerUps.forEach { powerUp ->
+                val color = when (powerUp.type) {
+                    PowerUpType.SHIELD -> Color.Cyan
+                    PowerUpType.DOUBLE_FIRE -> Color.Green
+                    PowerUpType.RAPID_FIRE -> Color.Yellow
+                }
+                drawCircle(color, radius = powerUp.radius, center = Offset(powerUp.x, powerUp.y))
+                drawCircle(Color.White, radius = powerUp.radius * 0.7f, center = Offset(powerUp.x, powerUp.y), style = Stroke(width = 2f))
+            }
+
             // Draw explosions
             state.explosions.forEach { explosion ->
                 drawCircle(
@@ -108,26 +139,45 @@ fun GameScreen(engine: GameEngine) {
 
         // HUD: Score and Lives
         if (state.phase == com.dailystudio.vibecoding.driftopen.game.models.GamePhase.PLAYING) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(16.dp)
             ) {
-                Text(
-                    text = "SCORE: ${state.score}",
-                    color = Color.White,
-                    style = MaterialTheme.typography.headlineSmall
-                )
-                Row {
-                    repeat(state.lives) {
-                        Icon(
-                            imageVector = Icons.Default.Favorite,
-                            contentDescription = null,
-                            tint = Color.Red,
-                            modifier = Modifier.size(32.dp)
-                        )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "SCORE: ${state.score}",
+                        color = Color.White,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    Text(
+                        text = "LEVEL: ${state.level}",
+                        color = Color.Yellow,
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    Row {
+                        repeat(state.lives) {
+                            Icon(
+                                imageVector = Icons.Default.Favorite,
+                                contentDescription = null,
+                                tint = Color.Red,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
                     }
+                }
+                
+                // Power-up indicator
+                state.activePowerUp?.let { 
+                    Text(
+                        text = "${it.type} ACTIVE: ${it.timeRemaining / 60}s",
+                        color = Color.Green,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
                 }
             }
         }

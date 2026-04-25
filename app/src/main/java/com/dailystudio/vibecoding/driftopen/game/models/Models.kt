@@ -15,8 +15,11 @@ data class GameState(
     val alienBullets: List<Bullet> = emptyList(),
     val stars: List<Star> = emptyList(),
     val explosions: List<Explosion> = emptyList(),
+    val powerUps: List<PowerUp> = emptyList(),
+    val activePowerUp: ActivePowerUp? = null,
     val score: Int = 0,
     val lives: Int = 3,
+    val level: Int = 1,
     val phase: GamePhase = GamePhase.START,
     val screenWidth: Float = 0f,
     val screenHeight: Float = 0f
@@ -51,10 +54,10 @@ data class Alien(
     val height: Float = 50f,
     val color: Color = Color.Red,
     val type: AlienType = AlienType.NORMAL,
+    val health: Int = 1,
     val isAttacking: Boolean = false,
     val attackPhase: Float = 0f
-)
- {
+) {
     fun getRect() = Rect(Offset(x - width / 2, y - height / 2), Offset(x + width / 2, y + height / 2))
 }
 
@@ -77,4 +80,23 @@ data class Star(
     val y: Float,
     val size: Float,
     val speed: Float
+)
+
+enum class PowerUpType {
+    SHIELD, DOUBLE_FIRE, RAPID_FIRE
+}
+
+data class PowerUp(
+    val x: Float,
+    val y: Float,
+    val type: PowerUpType,
+    val radius: Float = 20f,
+    val speed: Float = 5f
+) {
+    fun getRect() = Rect(Offset(x - radius, y - radius), Offset(x + radius, y + radius))
+}
+
+data class ActivePowerUp(
+    val type: PowerUpType,
+    val timeRemaining: Int = 600 // ~10 seconds at 60fps
 )
