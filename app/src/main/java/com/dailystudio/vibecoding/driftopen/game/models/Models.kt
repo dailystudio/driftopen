@@ -1,0 +1,80 @@
+package com.dailystudio.vibecoding.driftopen.game.models
+
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+
+enum class GamePhase {
+    START, PLAYING, GAME_OVER, WIN
+}
+
+data class GameState(
+    val ship: PlayerShip = PlayerShip(),
+    val aliens: List<Alien> = emptyList(),
+    val bullets: List<Bullet> = emptyList(),
+    val alienBullets: List<Bullet> = emptyList(),
+    val stars: List<Star> = emptyList(),
+    val explosions: List<Explosion> = emptyList(),
+    val score: Int = 0,
+    val lives: Int = 3,
+    val phase: GamePhase = GamePhase.START,
+    val screenWidth: Float = 0f,
+    val screenHeight: Float = 0f
+)
+
+data class Explosion(
+    val x: Float,
+    val y: Float,
+    val color: Color,
+    val radius: Float = 5f,
+    val alpha: Float = 1f,
+    val life: Int = 20 // Frames to live
+)
+
+data class PlayerShip(
+    val x: Float = 0f,
+    val y: Float = 0f,
+    val width: Float = 60f,
+    val height: Float = 60f,
+    val color: Color = Color.Cyan
+) {
+    fun getRect() = Rect(Offset(x - width / 2, y - height / 2), Offset(x + width / 2, y + height / 2))
+}
+
+data class Alien(
+    val id: Int,
+    val x: Float,
+    val y: Float,
+    val gridCol: Int,
+    val gridRow: Int,
+    val width: Float = 50f,
+    val height: Float = 50f,
+    val color: Color = Color.Red,
+    val type: AlienType = AlienType.NORMAL,
+    val isAttacking: Boolean = false,
+    val attackPhase: Float = 0f
+)
+ {
+    fun getRect() = Rect(Offset(x - width / 2, y - height / 2), Offset(x + width / 2, y + height / 2))
+}
+
+enum class AlienType {
+    NORMAL, FAST, BOSS
+}
+
+data class Bullet(
+    val x: Float,
+    val y: Float,
+    val width: Float = 6f,
+    val height: Float = 15f,
+    val speed: Float = 15f
+) {
+    fun getRect() = Rect(Offset(x - width / 2, y - height / 2), Offset(x + width / 2, y + height / 2))
+}
+
+data class Star(
+    val x: Float,
+    val y: Float,
+    val size: Float,
+    val speed: Float
+)
