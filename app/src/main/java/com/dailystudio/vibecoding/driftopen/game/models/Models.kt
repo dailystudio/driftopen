@@ -26,6 +26,9 @@ data class GameState(
     val highScore: Int = 0,
     val lives: Int = 5,
     val level: Int = 1,
+    val formationX: Float = 0f,
+    val alienMoveDirection: Float = 1f,
+    val superbossDirection: Float = 1f,
     val screenShakeIntensity: Float = 0f,
     val phase: GamePhase = GamePhase.START,
     val screenWidth: Float = 0f,
@@ -47,7 +50,8 @@ data class PlayerShip(
     val width: Float = 60f,
     val height: Float = 60f,
     val color: Color = Color.Cyan,
-    val invincibilityFrames: Int = 0
+    val invincibilityFrames: Int = 0,
+    val skinId: String = "default"
 ) {
     fun getRect() = Rect(Offset(x - width / 2, y - height / 2), Offset(x + width / 2, y + height / 2))
     fun getVisualRect() = Rect(Offset(x - width / 2, (y - 120f) - height / 2), Offset(x + width / 2, (y - 120f) + height / 2))
@@ -57,6 +61,8 @@ data class Alien(
     val id: Int,
     val x: Float,
     val y: Float,
+    val offsetX: Float,
+    val offsetY: Float,
     val gridCol: Int,
     val gridRow: Int,
     val width: Float = 50f,
@@ -66,9 +72,14 @@ data class Alien(
     val health: Int = 1,
     val maxHealth: Int = 1,
     val isAttacking: Boolean = false,
-    val attackPhase: Float = 0f
+    val attackPhase: Float = 0f,
+    val skinId: String = "default"
 ) {
     fun getRect() = Rect(Offset(x - width / 2, y - height / 2), Offset(x + width / 2, y + height / 2))
+}
+
+enum class FormationType {
+    GRID, V_SHAPE, DIAMOND, CIRCLE, HEART, RANDOM_SCATTER
 }
 
 enum class AlienType {

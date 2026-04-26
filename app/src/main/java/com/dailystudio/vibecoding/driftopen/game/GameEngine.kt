@@ -1,6 +1,7 @@
 package com.dailystudio.vibecoding.driftopen.game
 
 import com.dailystudio.vibecoding.driftopen.game.models.*
+import com.dailystudio.vibecoding.driftopen.game.formations.FormationGenerator
 import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,11 +15,6 @@ class GameEngine(private val soundManager: SoundManager? = null) {
     private val cheatManager = CheatManager()
 
     init {
-        // Sync cheats from manager to game state
-        // In a real app we might collect this in a scope, 
-        // but since updates are driven by the game loop or UI calls, 
-        // we can just update it whenever we need or on a separate collector.
-        // For simplicity, we'll check it in the update loop or when it changes.
     }
 
     fun recordStartScreenTap() {
@@ -31,8 +27,6 @@ class GameEngine(private val soundManager: SoundManager? = null) {
     }
 
     private var lastShootTime = 0L
-    private var alienMoveDirection = 1f
-    private var formationX = 0f
     private val spacing = 60f
 
     fun setScreenSize(width: Float, height: Float) {
@@ -56,6 +50,22 @@ class GameEngine(private val soundManager: SoundManager? = null) {
         }
     }
 
+    private fun getInitialFormationX(screenWidth: Float, level: Int): Float {
+        val formationType = when (level % 5) {
+            1 -> FormationType.GRID
+            2 -> FormationType.V_SHAPE
+            3 -> FormationType.DIAMOND
+            4 -> FormationType.CIRCLE
+            0 -> FormationType.HEART
+            else -> FormationType.GRID
+        }
+
+        return when (formationType) {
+            FormationType.GRID -> (screenWidth - (6 + (level / 2) - 1) * spacing) / 2
+            else -> screenWidth / 2
+        }
+    }
+
     private fun createAliens(screenWidth: Float, level: Int): List<Alien> {
         if (level % 5 == 0) {
             // Superboss level
@@ -65,6 +75,8 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                     id = 0,
                     x = screenWidth / 2,
                     y = 150f,
+                    offsetX = 0f,
+                    offsetY = 0f,
                     gridCol = 0,
                     gridRow = 0,
                     width = 200f,
@@ -77,54 +89,29 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             )
         }
 
-        val aliens = mutableListOf<Alien>()
-        val rows = 4
-        val cols = 6
-        formationX = (screenWidth - (cols - 1) * spacing) / 2
-        val startY = 150f
-
-        var idCounter = 0
-        for (row in 0 until rows) {
-            for (col in 0 until cols) {
-                val finalType = if (level == 1) AlienType.NORMAL
-                else if (level == 2) {
-                    if (row == 0) AlienType.FAST else AlienType.NORMAL
-                } else {
-                    if (row == 0) AlienType.BOSS
-                    else if (row == 1) AlienType.FAST
-                    else AlienType.NORMAL
-                }
-
-                val color = when (finalType) {
-                    AlienType.BOSS -> Color.Magenta
-                    AlienType.FAST -> Color.Yellow
-                    AlienType.NORMAL -> Color.Red
-                    else -> Color.Red
-                }
-                val health = if (finalType == AlienType.BOSS) 3 else 1
-
-                aliens.add(
-                    Alien(
-                        id = idCounter++,
-                        x = formationX + col * spacing,
-                        y = startY + row * spacing,
-                        gridCol = col,
-                        gridRow = row,
-                        type = finalType,
-                        color = color,
-                        health = health,
-                        maxHealth = health
-                    )
-                )
-            }
+        val formationType = when (level % 5) {
+            1 -> FormationType.GRID
+            2 -> FormationType.V_SHAPE
+            3 -> FormationType.DIAMOND
+            4 -> FormationType.CIRCLE
+            0 -> FormationType.HEART
+            else -> FormationType.GRID
         }
-        return aliens
+
+        return FormationGenerator.generateFormation(
+            type = formationType,
+            level = level,
+            screenWidth = screenWidth,
+            spacing = spacing,
+            startY = 150f
+        )
     }
 
     private fun spawnAliens(screenWidth: Float) {
         val level = _gameState.value.level
         val aliens = createAliens(screenWidth, level)
-        _gameState.update { it.copy(aliens = aliens) }
+        val initialX = getInitialFormationX(screenWidth, level)
+        _gameState.update { it.copy(aliens = aliens, formationX = initialX, alienMoveDirection = 1f, superbossDirection = 1f) }
     }
 
     fun moveShipRelative(deltaX: Float, deltaY: Float) {
@@ -183,11 +170,15 @@ class GameEngine(private val soundManager: SoundManager? = null) {
 
     fun startGame() {
         _gameState.update { 
+            val initialX = getInitialFormationX(it.screenWidth, 1)
             it.copy(
                 phase = GamePhase.PLAYING,
                 lives = 5,
                 score = 0,
                 level = 1,
+                formationX = initialX,
+                alienMoveDirection = 1f,
+                superbossDirection = 1f,
                 bullets = emptyList(),
                 alienBullets = emptyList(),
                 explosions = emptyList(),
@@ -282,21 +273,45 @@ class GameEngine(private val soundManager: SoundManager? = null) {
 
             // Move formation
             val levelBonus = (state.level - 1) * 0.3f
-            formationX += alienMoveDirection * (2f + levelBonus)
-            val formationWidth = (6 - 1) * spacing
-            if (formationX < 50f || formationX + formationWidth > state.screenWidth - 50f) {
-                alienMoveDirection *= -1
-                formationX = formationX.coerceIn(50f, state.screenWidth - 50f - formationWidth)
+            var nextMoveDirection = state.alienMoveDirection
+            var nextFormationX = state.formationX + nextMoveDirection * (2f + levelBonus)
+            var nextSuperbossDirection = state.superbossDirection
+            
+            // Boundary check for formation
+            val formationAliens = state.aliens.filter { !it.isAttacking && it.type != AlienType.SUPERBOSS }
+            if (formationAliens.isNotEmpty()) {
+                val minX = formationAliens.minOf { it.x }
+                val maxX = formationAliens.maxOf { it.x }
+                
+                if (minX < 50f && nextMoveDirection < 0) {
+                    nextMoveDirection = 1f
+                } else if (maxX > state.screenWidth - 50f && nextMoveDirection > 0) {
+                    nextMoveDirection = -1f
+                }
             }
+            
+            // Determine ship skin
+            val shipSkin = when (((state.level - 1) / 2) % 4) {
+                0 -> "default"
+                1 -> "heavy"
+                2 -> "stealth"
+                3 -> "retro"
+                else -> "default"
+            }
+            val baseShip = updatedShip.copy(skinId = shipSkin)
 
             var nextAliens = state.aliens.map { alien ->
                 if (alien.type == AlienType.SUPERBOSS) {
                     val healthPct = alien.health.toFloat() / alien.maxHealth
                     val speedScale = 1f + (1f - healthPct) * 1.5f
-                    var nx = alien.x + alienMoveDirection * 4f * speedScale
-                    if (nx < 150f || nx > state.screenWidth - 150f) {
-                        alienMoveDirection *= -1
-                        nx = alien.x + alienMoveDirection * 4f * speedScale
+                    // Superboss moves independently
+                    var nx = alien.x + nextSuperbossDirection * 4f * speedScale
+                    if (nx < 150f && nextSuperbossDirection < 0) {
+                        nextSuperbossDirection = 1f
+                        nx = 150f
+                    } else if (nx > state.screenWidth - 150f && nextSuperbossDirection > 0) {
+                        nextSuperbossDirection = -1f
+                        nx = state.screenWidth - 150f
                     }
                     alien.copy(x = nx)
                 } else if (alien.isAttacking) {
@@ -319,8 +334,8 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                         alien.copy(x = diveX, y = diveY, attackPhase = phase)
                     }
                 } else {
-                    val targetX = formationX + alien.gridCol * spacing
-                    val targetY = 150f + alien.gridRow * spacing
+                    val targetX = nextFormationX + alien.offsetX
+                    val targetY = 150f + alien.offsetY
                     
                     val dx = targetX - alien.x
                     val dy = targetY - alien.y
@@ -436,7 +451,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             finalBullets.removeAll(bulletsToRemove)
             
             // Collect powerups
-            val collectedPowerUps = currentPowerUps.filter { it.getRect().overlaps(updatedShip.getVisualRect()) }
+            val collectedPowerUps = currentPowerUps.filter { it.getRect().overlaps(baseShip.getVisualRect()) }
             if (collectedPowerUps.isNotEmpty()) {
                 soundManager?.playSound("powerup")
                 nextActivePowerUp = ActivePowerUp(collectedPowerUps.last().type)
@@ -444,10 +459,10 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             }
 
             // Player hit detection
-            val hitByBullet = if (updatedShip.invincibilityFrames == 0) updatedAlienBullets.find { it.getRect().overlaps(updatedShip.getVisualRect()) } else null
-            val hitByAlien = if (updatedShip.invincibilityFrames == 0) nextAliens.find { it.getRect().overlaps(updatedShip.getVisualRect()) } else null
+            val hitByBullet = if (baseShip.invincibilityFrames == 0) updatedAlienBullets.find { it.getRect().overlaps(baseShip.getVisualRect()) } else null
+            val hitByAlien = if (baseShip.invincibilityFrames == 0) nextAliens.find { it.getRect().overlaps(baseShip.getVisualRect()) } else null
 
-            var finalShip = updatedShip
+            var finalShip = baseShip
             var finalShake = nextShake
             if (hitByBullet != null || hitByAlien != null) {
                 if (nextActivePowerUp?.type == PowerUpType.SHIELD) {
@@ -458,15 +473,15 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                     // Cheat or Power-up active: don't lose lives, but still show feedback
                     finalShake = 10f
                     soundManager?.playSound("hit")
-                    currentExplosions.add(Explosion(updatedShip.x, updatedShip.y - 120f, Color.White, radius = 20f))
-                    finalShip = updatedShip.copy(invincibilityFrames = 40)
+                    currentExplosions.add(Explosion(baseShip.x, baseShip.y - 120f, Color.White, radius = 20f))
+                    finalShip = baseShip.copy(invincibilityFrames = 40)
                 } else {
                     newLives -= 1
                     finalShake = 15f
                     soundManager?.playSound("hit")
-                    currentExplosions.add(Explosion(updatedShip.x, updatedShip.y - 120f, Color.White, radius = 20f))
+                    currentExplosions.add(Explosion(baseShip.x, baseShip.y - 120f, Color.White, radius = 20f))
                     updatedAlienBullets = emptyList()
-                    finalShip = updatedShip.copy(invincibilityFrames = 60) // 1 second invincibility
+                    finalShip = baseShip.copy(invincibilityFrames = 60) // 1 second invincibility
                     
                     if (hitByAlien != null && hitByAlien.type != AlienType.SUPERBOSS) {
                         nextAliens.remove(hitByAlien)
@@ -481,6 +496,9 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             if (nextAliens.isEmpty() && state.aliens.isNotEmpty()) {
                 nextLevel += 1
                 nextAliens = createAliens(state.screenWidth, nextLevel).toMutableList()
+                nextFormationX = getInitialFormationX(state.screenWidth, nextLevel)
+                nextMoveDirection = 1f
+                nextSuperbossDirection = 1f
             }
 
             state.copy(
@@ -495,6 +513,9 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 score = state.score + scoreGain,
                 lives = newLives,
                 level = nextLevel,
+                formationX = nextFormationX,
+                alienMoveDirection = nextMoveDirection,
+                superbossDirection = nextSuperbossDirection,
                 screenShakeIntensity = finalShake,
                 phase = nextPhase
             )

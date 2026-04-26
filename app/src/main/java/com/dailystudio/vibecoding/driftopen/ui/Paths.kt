@@ -1,0 +1,67 @@
+package com.dailystudio.vibecoding.driftopen.ui
+
+import androidx.compose.ui.graphics.Path
+import com.dailystudio.vibecoding.driftopen.game.models.AlienType
+
+object GamePaths {
+
+    val shipSkins = mapOf(
+        "default" to Path().apply {
+            moveTo(0f, -0.5f)
+            lineTo(-0.2f, -0.1f)
+            lineTo(-0.5f, 0.3f)
+            lineTo(-0.2f, 0.5f)
+            lineTo(0.2f, 0.5f)
+            lineTo(0.5f, 0.3f)
+            lineTo(0.2f, -0.1f)
+            close()
+            // Wings
+            moveTo(-0.1f, 0.5f); lineTo(-0.3f, 0.7f); lineTo(-0.1f, 0.7f); close()
+            moveTo(0.1f, 0.5f); lineTo(0.3f, 0.7f); lineTo(0.1f, 0.7f); close()
+        },
+        "heavy" to Path().apply {
+            moveTo(-0.5f, 0.5f); lineTo(-0.5f, -0.2f); lineTo(-0.2f, -0.5f); lineTo(0.2f, -0.5f); lineTo(0.5f, -0.2f); lineTo(0.5f, 0.5f); close()
+            // Massive boosters
+            addRect(androidx.compose.ui.geometry.Rect(-0.4f, 0.5f, -0.1f, 0.7f))
+            addRect(androidx.compose.ui.geometry.Rect(0.1f, 0.5f, 0.4f, 0.7f))
+            // Front cannons
+            moveTo(-0.1f, -0.5f); lineTo(-0.1f, -0.7f); lineTo(0.1f, -0.7f); lineTo(0.1f, -0.5f); close()
+        },
+        "stealth" to Path().apply {
+            moveTo(0f, -0.7f)
+            lineTo(-0.5f, 0.5f)
+            lineTo(0f, 0.2f)
+            lineTo(0.5f, 0.5f)
+            close()
+            // Inner details
+            moveTo(0f, -0.3f); lineTo(-0.2f, 0.2f); lineTo(0.2f, 0.2f); close()
+        },
+        "retro" to Path().apply {
+            // Blocky ship
+            addRect(androidx.compose.ui.geometry.Rect(-0.1f, -0.5f, 0.1f, 0.5f))
+            addRect(androidx.compose.ui.geometry.Rect(-0.3f, 0f, 0.3f, 0.3f))
+            addRect(androidx.compose.ui.geometry.Rect(-0.5f, 0.3f, 0.5f, 0.6f))
+        }
+    )
+
+    val alienSkins = mapOf(
+        "default" to mapOf(
+            AlienType.NORMAL to Path().apply {
+                moveTo(0f, 0.5f); lineTo(-0.5f, -0.25f); lineTo(-0.25f, -0.5f); lineTo(0.25f, -0.5f); lineTo(0.5f, -0.25f); close()
+                moveTo(-0.25f, 0.5f); lineTo(-0.4f, 0.65f); moveTo(0.25f, 0.5f); lineTo(0.4f, 0.65f)
+            },
+            AlienType.FAST to Path().apply {
+                moveTo(0f, -0.5f); lineTo(0.5f, 0f); lineTo(0f, 0.5f); lineTo(-0.5f, 0f); close()
+                moveTo(-0.5f, 0f); lineTo(-0.75f, 0.25f); moveTo(0.5f, 0f); lineTo(0.75f, 0.25f)
+            },
+            AlienType.BOSS to Path().apply {
+                moveTo(0f, -0.5f); lineTo(0.5f, -0.25f); lineTo(0.5f, 0.25f); lineTo(0.25f, 0.5f); lineTo(-0.25f, 0.5f); lineTo(-0.5f, 0.25f); lineTo(-0.5f, -0.25f); close()
+                moveTo(-0.15f, -0.5f); lineTo(-0.25f, -0.75f); moveTo(0.15f, -0.5f); lineTo(0.25f, -0.75f)
+            },
+            AlienType.SUPERBOSS to Path().apply {
+                moveTo(0f, -0.5f); lineTo(0.5f, -0.25f); lineTo(0.5f, 0.25f); lineTo(0.25f, 0.5f); lineTo(-0.25f, 0.5f); lineTo(-0.5f, 0.25f); lineTo(-0.5f, -0.25f); close()
+                moveTo(-0.5f, 0f); lineTo(-1.0f, -0.5f); lineTo(-0.5f, 0.1f); moveTo(0.5f, 0f); lineTo(1.0f, -0.5f); lineTo(0.5f, 0.1f)
+            }
+        )
+    )
+}

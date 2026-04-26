@@ -25,93 +25,6 @@ import com.dailystudio.vibecoding.driftopen.game.models.*
 fun GameScreen(engine: GameEngine) {
     val state by engine.gameState.collectAsState()
 
-    val shipPath = remember { 
-        Path().apply {
-            // Unit ship (centered at 0,0, width/height ~1.0)
-            moveTo(0f, -0.5f)
-            lineTo(-0.2f, -0.1f)
-            lineTo(-0.5f, 0.3f)
-            lineTo(-0.2f, 0.5f)
-            lineTo(0.2f, 0.5f)
-            lineTo(0.5f, 0.3f)
-            lineTo(0.2f, -0.1f)
-            close()
-
-            // Wings/Engines
-            moveTo(-0.1f, 0.5f)
-            lineTo(-0.3f, 0.7f)
-            lineTo(-0.1f, 0.7f)
-            close()
-            
-            moveTo(0.1f, 0.5f)
-            lineTo(0.3f, 0.7f)
-            lineTo(0.1f, 0.7f)
-            close()
-        }
-    }
-
-    val alienPaths = remember {
-        mapOf(
-            AlienType.NORMAL to Path().apply {
-                moveTo(0f, 0.5f)
-                lineTo(-0.5f, -0.25f)
-                lineTo(-0.25f, -0.5f)
-                lineTo(0.25f, -0.5f)
-                lineTo(0.5f, -0.25f)
-                close()
-                // Legs
-                moveTo(-0.25f, 0.5f)
-                lineTo(-0.4f, 0.65f)
-                moveTo(0.25f, 0.5f)
-                lineTo(0.4f, 0.65f)
-            },
-            AlienType.FAST to Path().apply {
-                moveTo(0f, -0.5f)
-                lineTo(0.5f, 0f)
-                lineTo(0f, 0.5f)
-                lineTo(-0.5f, 0f)
-                close()
-                // Side fins
-                moveTo(-0.5f, 0f)
-                lineTo(-0.75f, 0.25f)
-                moveTo(0.5f, 0f)
-                lineTo(0.75f, 0.25f)
-            },
-            AlienType.BOSS to Path().apply {
-                moveTo(0f, -0.5f)
-                lineTo(0.5f, -0.25f)
-                lineTo(0.5f, 0.25f)
-                lineTo(0.25f, 0.5f)
-                lineTo(-0.25f, 0.5f)
-                lineTo(-0.5f, 0.25f)
-                lineTo(-0.5f, -0.25f)
-                close()
-                // Horns
-                moveTo(-0.15f, -0.5f)
-                lineTo(-0.25f, -0.75f)
-                moveTo(0.15f, -0.5f)
-                lineTo(0.25f, -0.75f)
-            },
-            AlienType.SUPERBOSS to Path().apply {
-                moveTo(0f, -0.5f)
-                lineTo(0.5f, -0.25f)
-                lineTo(0.5f, 0.25f)
-                lineTo(0.25f, 0.5f)
-                lineTo(-0.25f, 0.5f)
-                lineTo(-0.5f, 0.25f)
-                lineTo(-0.5f, -0.25f)
-                close()
-                // Massive wings
-                moveTo(-0.5f, 0f)
-                lineTo(-1.0f, -0.5f)
-                lineTo(-0.5f, 0.1f)
-                moveTo(0.5f, 0f)
-                lineTo(1.0f, -0.5f)
-                lineTo(0.5f, 0.1f)
-            }
-        )
-    }
-
     LaunchedEffect(Unit) {
         while (true) {
             withFrameNanos { frameTimeNanos ->
@@ -162,6 +75,8 @@ fun GameScreen(engine: GameEngine) {
                 if ((ship.invincibilityFrames / 5) % 2 == 0) 0.3f else 0.7f
             } else 1f
             
+            val shipPath = GamePaths.shipSkins[ship.skinId] ?: GamePaths.shipSkins["default"]!!
+
             drawContext.canvas.save()
             drawContext.canvas.translate(ship.x, visualY)
             drawContext.canvas.scale(ship.width, ship.height)
@@ -185,7 +100,8 @@ fun GameScreen(engine: GameEngine) {
             state.aliens.forEach { alien ->
                 val w = alien.width / 2
                 val h = alien.height / 2
-                val path = alienPaths[alien.type] ?: alienPaths[AlienType.NORMAL]!!
+                val skins = GamePaths.alienSkins[alien.skinId] ?: GamePaths.alienSkins["default"]!!
+                val path = skins[alien.type] ?: skins[AlienType.NORMAL]!!
                 
                 drawContext.canvas.save()
                 drawContext.canvas.translate(alien.x, alien.y)
