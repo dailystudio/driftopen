@@ -25,6 +25,93 @@ import com.dailystudio.vibecoding.driftopen.game.models.*
 fun GameScreen(engine: GameEngine) {
     val state by engine.gameState.collectAsState()
 
+    val shipPath = remember { 
+        Path().apply {
+            // Unit ship (centered at 0,0, width/height ~1.0)
+            moveTo(0f, -0.5f)
+            lineTo(-0.2f, -0.1f)
+            lineTo(-0.5f, 0.3f)
+            lineTo(-0.2f, 0.5f)
+            lineTo(0.2f, 0.5f)
+            lineTo(0.5f, 0.3f)
+            lineTo(0.2f, -0.1f)
+            close()
+
+            // Wings/Engines
+            moveTo(-0.1f, 0.5f)
+            lineTo(-0.3f, 0.7f)
+            lineTo(-0.1f, 0.7f)
+            close()
+            
+            moveTo(0.1f, 0.5f)
+            lineTo(0.3f, 0.7f)
+            lineTo(0.1f, 0.7f)
+            close()
+        }
+    }
+
+    val alienPaths = remember {
+        mapOf(
+            AlienType.NORMAL to Path().apply {
+                moveTo(0f, 0.5f)
+                lineTo(-0.5f, -0.25f)
+                lineTo(-0.25f, -0.5f)
+                lineTo(0.25f, -0.5f)
+                lineTo(0.5f, -0.25f)
+                close()
+                // Legs
+                moveTo(-0.25f, 0.5f)
+                lineTo(-0.4f, 0.65f)
+                moveTo(0.25f, 0.5f)
+                lineTo(0.4f, 0.65f)
+            },
+            AlienType.FAST to Path().apply {
+                moveTo(0f, -0.5f)
+                lineTo(0.5f, 0f)
+                lineTo(0f, 0.5f)
+                lineTo(-0.5f, 0f)
+                close()
+                // Side fins
+                moveTo(-0.5f, 0f)
+                lineTo(-0.75f, 0.25f)
+                moveTo(0.5f, 0f)
+                lineTo(0.75f, 0.25f)
+            },
+            AlienType.BOSS to Path().apply {
+                moveTo(0f, -0.5f)
+                lineTo(0.5f, -0.25f)
+                lineTo(0.5f, 0.25f)
+                lineTo(0.25f, 0.5f)
+                lineTo(-0.25f, 0.5f)
+                lineTo(-0.5f, 0.25f)
+                lineTo(-0.5f, -0.25f)
+                close()
+                // Horns
+                moveTo(-0.15f, -0.5f)
+                lineTo(-0.25f, -0.75f)
+                moveTo(0.15f, -0.5f)
+                lineTo(0.25f, -0.75f)
+            },
+            AlienType.SUPERBOSS to Path().apply {
+                moveTo(0f, -0.5f)
+                lineTo(0.5f, -0.25f)
+                lineTo(0.5f, 0.25f)
+                lineTo(0.25f, 0.5f)
+                lineTo(-0.25f, 0.5f)
+                lineTo(-0.5f, 0.25f)
+                lineTo(-0.5f, -0.25f)
+                close()
+                // Massive wings
+                moveTo(-0.5f, 0f)
+                lineTo(-1.0f, -0.5f)
+                lineTo(-0.5f, 0.1f)
+                moveTo(0.5f, 0f)
+                lineTo(1.0f, -0.5f)
+                lineTo(0.5f, 0.1f)
+            }
+        )
+    }
+
     LaunchedEffect(Unit) {
         while (true) {
             withFrameNanos { frameTimeNanos ->
@@ -75,13 +162,14 @@ fun GameScreen(engine: GameEngine) {
                 if ((ship.invincibilityFrames / 5) % 2 == 0) 0.3f else 0.7f
             } else 1f
             
-            val shipPath = Path().apply {
-                moveTo(ship.x, visualY - ship.height / 2)
-                lineTo(ship.x - ship.width / 2, visualY + ship.height / 2)
-                lineTo(ship.x + ship.width / 2, visualY + ship.height / 2)
-                close()
-            }
+            drawContext.canvas.save()
+            drawContext.canvas.translate(ship.x, visualY)
+            drawContext.canvas.scale(ship.width, ship.height)
             drawPath(shipPath, Color.Cyan.copy(alpha = shipAlpha))
+            drawContext.canvas.restore()
+            
+            // Cockpit (still drawing circle directly as it's simple)
+            drawCircle(Color.White.copy(alpha = 0.8f * shipAlpha), radius = ship.width * 0.1f, center = Offset(ship.x, visualY))
 
             // Draw shield aura if active (using visualY)
             if (state.activePowerUp?.type == PowerUpType.SHIELD) {
@@ -95,44 +183,29 @@ fun GameScreen(engine: GameEngine) {
 
             // Draw aliens
             state.aliens.forEach { alien ->
-                val path = when (alien.type) {
-                    AlienType.NORMAL -> Path().apply {
-                        moveTo(alien.x, alien.y + alien.height / 2)
-                        lineTo(alien.x - alien.width / 2, alien.y - alien.height / 2)
-                        lineTo(alien.x + alien.width / 2, alien.y - alien.height / 2)
-                        close()
-                    }
-                    AlienType.FAST -> Path().apply {
-                        moveTo(alien.x, alien.y - alien.height / 2)
-                        lineTo(alien.x + alien.width / 2, alien.y)
-                        lineTo(alien.x, alien.y + alien.height / 2)
-                        lineTo(alien.x - alien.width / 2, alien.y)
-                        close()
-                    }
-                    AlienType.BOSS -> Path().apply {
-                        val w = alien.width / 2
-                        val h = alien.height / 2
-                        moveTo(alien.x, alien.y - h)
-                        lineTo(alien.x + w, alien.y - h / 2)
-                        lineTo(alien.x + w, alien.y + h / 2)
-                        lineTo(alien.x, alien.y + h)
-                        lineTo(alien.x - w, alien.y + h / 2)
-                        lineTo(alien.x - w, alien.y - h / 2)
-                        close()
-                    }
-                    AlienType.SUPERBOSS -> Path().apply {
-                        val w = alien.width / 2
-                        val h = alien.height / 2
-                        moveTo(alien.x, alien.y - h)
-                        lineTo(alien.x + w, alien.y - h * 0.5f)
-                        lineTo(alien.x + w * 0.8f, alien.y + h)
-                        lineTo(alien.x - w * 0.8f, alien.y + h)
-                        lineTo(alien.x - w, alien.y - h * 0.5f)
-                        close()
-                    }
-                }
+                val w = alien.width / 2
+                val h = alien.height / 2
+                val path = alienPaths[alien.type] ?: alienPaths[AlienType.NORMAL]!!
                 
+                drawContext.canvas.save()
+                drawContext.canvas.translate(alien.x, alien.y)
+                drawContext.canvas.scale(alien.width, alien.height)
                 drawPath(path, color = alien.color)
+                
+                if (alien.type != AlienType.SUPERBOSS) {
+                    drawPath(path, color = Color.White.copy(alpha = 0.3f), style = Stroke(width = 2f / alien.width))
+                } else {
+                    drawPath(path, color = Color.Yellow.copy(alpha = 0.5f), style = Stroke(width = 4f / alien.width))
+                }
+                drawContext.canvas.restore()
+
+                // Eyes (still simple circles)
+                val eyeOffset = w * 0.3f
+                val eyeSize = w * 0.2f
+                drawCircle(Color.White, radius = eyeSize, center = Offset(alien.x - eyeOffset, alien.y - h * 0.2f))
+                drawCircle(Color.White, radius = eyeSize, center = Offset(alien.x + eyeOffset, alien.y - h * 0.2f))
+                drawCircle(Color.Black, radius = eyeSize * 0.5f, center = Offset(alien.x - eyeOffset, alien.y - h * 0.2f))
+                drawCircle(Color.Black, radius = eyeSize * 0.5f, center = Offset(alien.x + eyeOffset, alien.y - h * 0.2f))
                 
                 // Health bar
                 if (alien.health < alien.maxHealth) {

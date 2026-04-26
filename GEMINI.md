@@ -35,14 +35,14 @@ This is a modern Android implementation of the classic arcade game "DriftOpen" b
 ### Visuals & Audio
 - [x] **Sound Effects**: Implemented `SoundManager` architecture with `SoundPool` triggers. (Requires assets in `res/raw`).
 - [x] **Music**: Implemented `MediaPlayer` background logic in `SoundManager`. (Requires assets in `res/raw`).
-- [ ] **Enhanced Graphics**: Use vector graphics or sprite sheets instead of simple shapes.
+- [x] **Enhanced Graphics**: Use vector graphics or sprite sheets instead of simple shapes.
 - [x] **Distinct Alien Shapes**: Replace simple rectangles with unique Compose `Path` shapes for each alien type (e.g., Chevron for Normal, Diamond for Fast, Hexagon for Boss).
 - [x] **Screen Shake**: Implemented dynamic screen shake on player hit.
 
 ### Technical Tasks
-- [ ] **Performance Profiling**: Optimize `Canvas` rendering for high alien counts.
+- [x] **Performance Profiling**: Optimize `Canvas` rendering for high alien counts.
 - [x] **Save State**: Persist high scores using Jetpack DataStore.
-- [ ] **Unit Tests**: Add tests for collision logic and state transitions in `GameEngine`.
+- [x] **Unit Tests**: Add tests for collision logic and state transitions in `GameEngine`.
 
 ## Tech Stack
 - **Language**: Kotlin
