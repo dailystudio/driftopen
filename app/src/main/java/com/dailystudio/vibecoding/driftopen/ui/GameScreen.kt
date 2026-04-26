@@ -241,13 +241,27 @@ fun GameScreen(engine: GameEngine) {
                         color = Color.Yellow,
                         style = MaterialTheme.typography.headlineSmall
                     )
-                    Row {
-                        repeat(state.lives) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (state.lives <= 5) {
+                            repeat(state.lives) {
+                                Icon(
+                                    imageVector = Icons.Default.Favorite,
+                                    contentDescription = null,
+                                    tint = Color.Red,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+                        } else {
                             Icon(
                                 imageVector = Icons.Default.Favorite,
                                 contentDescription = null,
                                 tint = Color.Red,
                                 modifier = Modifier.size(32.dp)
+                            )
+                            Text(
+                                text = " x${state.lives}",
+                                color = Color.Red,
+                                style = MaterialTheme.typography.headlineSmall
                             )
                         }
                     }

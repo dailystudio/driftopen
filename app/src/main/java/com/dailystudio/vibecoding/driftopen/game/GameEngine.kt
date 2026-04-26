@@ -13,6 +13,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
     val gameState = _gameState.asStateFlow()
 
     private val cheatManager = CheatManager()
+    private var lastAttackTime = 0L
 
     init {
     }
@@ -329,7 +330,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                     val diveX = alien.x + kotlin.math.sin(phase * freq) * amp
                     val diveY = alien.y + 12f * speedMultiplier
                     if (diveY > state.screenHeight + 50f) {
-                        alien.copy(y = -50f, isAttacking = false, attackPhase = 0f)
+                        alien.copy(y = -50f, isAttacking = false, attackPhase = 0f, readyTime = System.currentTimeMillis() + 1000L)
                     } else {
                         alien.copy(x = diveX, y = diveY, attackPhase = phase)
                     }
@@ -348,12 +349,23 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             }.toMutableList()
 
             // Attack logic
-            val attackChance = (2 + state.level * 0.5f).toInt()
-            if (Random.nextInt(100) < attackChance && nextAliens.any { it.type != AlienType.SUPERBOSS && !it.isAttacking && it.y >= 150f }) {
-                val candidates = nextAliens.indices.filter { i -> nextAliens[i].type != AlienType.SUPERBOSS && !nextAliens[i].isAttacking && nextAliens[i].y >= 150f }
+            val nowMillis = System.currentTimeMillis()
+            val attackInterval = (1500L - (state.level / 5) * 200L).coerceAtLeast(600L)
+            val maxConcurrentAttackers = (2 + state.level / 3).coerceAtMost(8)
+            val currentAttackers = nextAliens.count { it.isAttacking }
+
+            if (nowMillis - lastAttackTime > attackInterval && 
+                currentAttackers < maxConcurrentAttackers &&
+                nextAliens.any { it.type != AlienType.SUPERBOSS && !it.isAttacking && it.y >= 150f && nowMillis >= it.readyTime }) {
+                
+                val candidates = nextAliens.indices.filter { i -> 
+                    val a = nextAliens[i]
+                    a.type != AlienType.SUPERBOSS && !a.isAttacking && a.y >= 150f && nowMillis >= a.readyTime 
+                }
                 if (candidates.isNotEmpty()) {
                     val index = candidates.random()
                     nextAliens[index] = nextAliens[index].copy(isAttacking = true)
+                    lastAttackTime = nowMillis
                 }
             }
             
@@ -449,6 +461,12 @@ class GameEngine(private val soundManager: SoundManager? = null) {
 
             nextAliens.removeAll { it.health <= 0 }
             finalBullets.removeAll(bulletsToRemove)
+            
+            // Add lives for score
+            val oldScore = state.score
+            val newScoreTotal = oldScore + scoreGain
+            val livesFromScore = (newScoreTotal / 5000) - (oldScore / 5000)
+            newLives += livesFromScore
             
             // Collect powerups
             val collectedPowerUps = currentPowerUps.filter { it.getRect().overlaps(baseShip.getVisualRect()) }

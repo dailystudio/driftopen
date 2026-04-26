@@ -94,21 +94,16 @@ object FormationGenerator {
 
     private fun generateVShape(level: Int, screenWidth: Float, spacing: Float, startY: Float): List<Alien> {
         val aliens = mutableListOf<Alien>()
-        val wings = 4 + level
+        val rows = 4 + (level / 2)
         val centerX = screenWidth / 2
         var idCounter = 0
 
-        for (i in 0 until wings) {
-            val (type, color) = getAlienProperties(i / 2, level)
-            // Left wing
-            val lox = -i * (spacing * 0.8f)
-            val loy = i * (spacing * 0.8f)
-            aliens.add(createAlien(idCounter++, centerX + lox, startY + loy, lox, loy, -i, i, type, color))
-            // Right wing
-            if (i > 0) {
-                val rox = i * (spacing * 0.8f)
-                val roy = i * (spacing * 0.8f)
-                aliens.add(createAlien(idCounter++, centerX + rox, startY + roy, rox, roy, i, i, type, color))
+        for (row in 0 until rows) {
+            val (type, color) = getAlienProperties(row, level)
+            for (col in -row..row) {
+                val ox = col * spacing
+                val oy = row * spacing
+                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, col, row, type, color))
             }
         }
         return aliens
@@ -135,39 +130,58 @@ object FormationGenerator {
 
     private fun generateCircle(level: Int, screenWidth: Float, spacing: Float, startY: Float): List<Alien> {
         val aliens = mutableListOf<Alien>()
-        val count = 12 + level * 2
-        val radius = spacing * (2 + level * 0.2f)
+        val maxRadius = spacing * (2 + level * 0.2f)
         val centerX = screenWidth / 2
         var idCounter = 0
-
-        for (i in 0 until count) {
-            val angle = 2 * PI * i / count
-            val ox = radius * cos(angle).toFloat()
-            val oy = radius + radius * sin(angle).toFloat()
-            val (type, color) = getAlienProperties(i % 4, level)
-            aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, i, 0, type, color))
+        
+        val ringCount = (maxRadius / spacing).toInt() + 1
+        for (ring in 0 until ringCount) {
+            val radius = ring * spacing
+            if (radius == 0f) {
+                val (type, color) = getAlienProperties(0, level)
+                aliens.add(createAlien(idCounter++, centerX, startY + maxRadius, 0f, maxRadius, 0, 0, type, color))
+                continue
+            }
+            
+            val circumference = 2 * PI * radius
+            val count = (circumference / spacing).toInt().coerceAtLeast(1)
+            for (i in 0 until count) {
+                val angle = 2 * PI * i / count
+                val ox = radius * cos(angle).toFloat()
+                val oy = maxRadius + radius * sin(angle).toFloat()
+                val (type, color) = getAlienProperties(ring % 3, level)
+                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, i, ring, type, color))
+            }
         }
         return aliens
     }
 
     private fun generateHeart(level: Int, screenWidth: Float, spacing: Float, startY: Float): List<Alien> {
         val aliens = mutableListOf<Alien>()
-        val count = 15
         val centerX = screenWidth / 2
-        val verticalOffset = spacing * 2
+        val scale = spacing / 8
+        val verticalOffset = spacing * 4
         var idCounter = 0
 
-        for (i in 0 until count) {
-            val t = 2 * PI * i / count
-            val hx = 16 * sin(t).pow(3)
-            val hy = -(13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t))
-            
-            val scale = spacing / 8
-            val ox = hx.toFloat() * scale
-            val oy = verticalOffset + hy.toFloat() * scale
-            val (type, color) = getAlienProperties(i % 3, level)
-            aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, i, 0, type, color))
+        val ringCount = 5
+        for (ring in 1..ringCount) {
+            val ringScale = scale * (ring.toFloat() / ringCount)
+            val count = 8 + ring * 4
+            for (i in 0 until count) {
+                val t = 2 * PI * i / count
+                val hx = 16 * sin(t).pow(3)
+                val hy = -(13 * cos(t) - 5 * cos(2 * t) - 2 * cos(3 * t) - cos(4 * t))
+                
+                val ox = hx.toFloat() * ringScale
+                val oy = verticalOffset + hy.toFloat() * ringScale
+                val (type, color) = getAlienProperties(ring % 3, level)
+                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, i, ring, type, color))
+            }
         }
+        // Center alien
+        val (type, color) = getAlienProperties(0, level)
+        aliens.add(createAlien(idCounter++, centerX, startY + verticalOffset, 0f, verticalOffset, 0, 0, type, color))
+        
         return aliens
     }
 

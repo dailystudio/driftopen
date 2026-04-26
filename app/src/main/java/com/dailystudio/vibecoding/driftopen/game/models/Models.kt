@@ -73,7 +73,8 @@ data class Alien(
     val maxHealth: Int = 1,
     val isAttacking: Boolean = false,
     val attackPhase: Float = 0f,
-    val skinId: String = "default"
+    val skinId: String = "default",
+    val readyTime: Long = 0L
 ) {
     fun getRect() = Rect(Offset(x - width / 2, y - height / 2), Offset(x + width / 2, y + height / 2))
 }
