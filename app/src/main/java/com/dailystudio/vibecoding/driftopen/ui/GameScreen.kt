@@ -24,6 +24,7 @@ import com.dailystudio.vibecoding.driftopen.game.models.*
 @Composable
 fun GameScreen(engine: GameEngine) {
     val state by engine.gameState.collectAsState()
+    val BASE_WIDTH = 1080f
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -39,8 +40,9 @@ fun GameScreen(engine: GameEngine) {
                 .fillMaxSize()
                 .pointerInput(Unit) {
                     detectDragGestures { change, dragAmount ->
+                        val scaleFactor = size.width / BASE_WIDTH
                         change.consume()
-                        engine.moveShipRelative(dragAmount.x, dragAmount.y)
+                        engine.moveShipRelative(dragAmount.x / scaleFactor, dragAmount.y / scaleFactor)
                     }
                 }
                 .pointerInput(Unit) {
@@ -49,8 +51,9 @@ fun GameScreen(engine: GameEngine) {
                     }
                 }
         ) {
+            val scaleFactor = size.width / BASE_WIDTH
             if (state.screenWidth == 0f) {
-                engine.setScreenSize(size.width, size.height)
+                engine.setScreenSize(BASE_WIDTH, size.height / scaleFactor)
             }
 
             val shakeX = if (state.screenShakeIntensity > 0) (kotlin.random.Random.nextFloat() - 0.5f) * 2 * state.screenShakeIntensity else 0f
@@ -58,9 +61,10 @@ fun GameScreen(engine: GameEngine) {
 
             drawContext.canvas.save()
             drawContext.canvas.translate(shakeX, shakeY)
+            drawContext.canvas.scale(scaleFactor, scaleFactor)
 
             // Draw background
-            drawRect(Color.Black)
+            drawRect(Color.Black, size = Size(BASE_WIDTH, size.height / scaleFactor))
             
             // Draw stars
             state.stars.forEach { star ->
