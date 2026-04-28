@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.dailystudio.vibecoding.driftopen.game.GameEngine
 import com.dailystudio.vibecoding.driftopen.game.models.*
 
@@ -133,12 +134,12 @@ fun GameScreen(engine: GameEngine) {
                     val healthWidth = barWidth * (alien.health.toFloat() / alien.maxHealth)
                     drawRect(
                         color = Color.Gray,
-                        topLeft = Offset(alien.x - barWidth / 2, alien.y - alien.height / 2 - 15f),
+                        topLeft = Offset(alien.x - barWidth / 2, alien.y + alien.height / 2 + 10f),
                         size = Size(barWidth, 6f)
                     )
                     drawRect(
                         color = Color.Green,
-                        topLeft = Offset(alien.x - barWidth / 2, alien.y - alien.height / 2 - 15f),
+                        topLeft = Offset(alien.x - barWidth / 2, alien.y + alien.height / 2 + 10f),
                         size = Size(healthWidth, 6f)
                     )
                 }
@@ -280,6 +281,21 @@ fun GameScreen(engine: GameEngine) {
                         modifier = Modifier.padding(top = 8.dp)
                     )
                 }
+
+                // Cheat indicator
+                if (state.activeCheats.isNotEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomStart) {
+                        Column {
+                            state.activeCheats.forEach { cheat ->
+                                Text(
+                                    text = "CHEAT: ${cheat.name}",
+                                    color = Color.Red.copy(alpha = 0.7f),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -420,6 +436,93 @@ fun GameScreen(engine: GameEngine) {
                 }
             }
             GamePhase.PLAYING -> { /* HUD is drawn above */ }
+            GamePhase.CHEAT -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.95f)),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "SECURITY CONSOLE",
+                        color = Color.Red,
+                        style = MaterialTheme.typography.headlineLarge,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Text(
+                        text = state.cheatMessage,
+                        color = Color.Yellow,
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                    
+                    // Masked input display
+                    Text(
+                        text = if (state.cheatCodeInput.isEmpty()) "" else "* ".repeat(state.cheatCodeInput.length),
+                        color = Color.Cyan,
+                        style = MaterialTheme.typography.displaySmall,
+                        modifier = Modifier.padding(bottom = 24.dp).height(48.dp)
+                    )
+                    
+                    val keys = listOf(
+                        listOf("1", "2", "3"),
+                        listOf("4", "5", "6"),
+                        listOf("7", "8", "9"),
+                        listOf("", "0", "X")
+                    )
+                    
+                    keys.forEach { row ->
+                        Row(
+                            modifier = Modifier.padding(vertical = 6.dp),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            row.forEach { key ->
+                                if (key.isNotEmpty()) {
+                                    Button(
+                                        onClick = { engine.handleCheatInput(key) },
+                                        modifier = Modifier
+                                            .padding(horizontal = 8.dp)
+                                            .size(80.dp),
+                                        shape = MaterialTheme.shapes.medium,
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = Color.Gray.copy(alpha = 0.3f)
+                                        ),
+                                        contentPadding = PaddingValues(0.dp)
+                                    ) {
+                                        Text(key, fontSize = 32.sp, color = Color.White)
+                                    }
+                                } else {
+                                    // Empty space to maintain alignment
+                                    Box(modifier = Modifier.padding(horizontal = 8.dp).size(80.dp))
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(32.dp))
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = { engine.clearCheatInput() },
+                            modifier = Modifier.padding(horizontal = 8.dp).width(120.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
+                        ) {
+                            Text("CLEAR")
+                        }
+                        Button(
+                            onClick = { engine.closeCheatConsole() },
+                            modifier = Modifier.padding(horizontal = 8.dp).width(120.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8B0000))
+                        ) {
+                            Text("EXIT")
+                        }
+                    }
+                }
+            }
         }
     }
 }

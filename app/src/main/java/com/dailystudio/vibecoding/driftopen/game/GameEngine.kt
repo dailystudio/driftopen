@@ -19,8 +19,50 @@ class GameEngine(private val soundManager: SoundManager? = null) {
     }
 
     fun recordStartScreenTap() {
-        cheatManager.onStartScreenTap()
-        _gameState.update { it.copy(activeCheats = cheatManager.activatedCheats.value) }
+        if (cheatManager.onStartScreenTap()) {
+            _gameState.update { it.copy(phase = GamePhase.CHEAT, cheatCodeInput = "", cheatMessage = "ENTER CODE") }
+            cheatManager.resetTaps()
+        }
+    }
+
+    fun handleCheatInput(input: String) {
+        _gameState.update { state ->
+            val newInput = state.cheatCodeInput + input
+            val validation = cheatManager.validateCode(newInput)
+            if (validation != null) {
+                val (cheatType, extra) = validation
+                var nextState = state.copy(
+                    activeCheats = state.activeCheats + cheatType,
+                    cheatCodeInput = "",
+                    cheatMessage = "ACCESS GRANTED"
+                )
+                
+                // Apply immediate effects
+                nextState = when (cheatType) {
+                    CheatType.LIVES_99 -> nextState.copy(lives = 99)
+                    CheatType.LEVEL_SELECT -> {
+                        val newLevel = extra ?: state.level
+                        nextState.copy(level = newLevel)
+                    }
+                    else -> nextState
+                }
+                
+                cheatManager.activateCheat(cheatType)
+                nextState
+            } else {
+                // Limit input length to prevent overflow, e.g., max 10 chars
+                val limitedInput = if (newInput.length > 10) newInput.takeLast(10) else newInput
+                state.copy(cheatCodeInput = limitedInput, cheatMessage = "TYPING...")
+            }
+        }
+    }
+
+    fun clearCheatInput() {
+        _gameState.update { it.copy(cheatCodeInput = "", cheatMessage = "CLEARED") }
+    }
+
+    fun closeCheatConsole() {
+        _gameState.update { it.copy(phase = GamePhase.START, cheatCodeInput = "", cheatMessage = "") }
     }
 
     fun setHighScore(score: Int) {
@@ -171,12 +213,14 @@ class GameEngine(private val soundManager: SoundManager? = null) {
 
     fun startGame() {
         _gameState.update { 
-            val initialX = getInitialFormationX(it.screenWidth, 1)
+            val startLevel = if (it.activeCheats.contains(CheatType.LEVEL_SELECT)) it.level else 1
+            val startLives = if (it.activeCheats.contains(CheatType.LIVES_99)) it.lives else 5
+            val initialX = getInitialFormationX(it.screenWidth, startLevel)
             it.copy(
                 phase = GamePhase.PLAYING,
-                lives = 5,
+                lives = startLives,
                 score = 0,
-                level = 1,
+                level = startLevel,
                 formationX = initialX,
                 alienMoveDirection = 1f,
                 superbossDirection = 1f,
@@ -185,14 +229,15 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 explosions = emptyList(),
                 powerUps = emptyList(),
                 activePowerUp = null,
-                aliens = createAliens(it.screenWidth, 1),
+                aliens = createAliens(it.screenWidth, startLevel),
                 ship = it.ship.copy(x = it.screenWidth / 2, y = it.screenHeight - 150f, invincibilityFrames = 0)
             ) 
         }
     }
 
     fun resetToStart() {
-        _gameState.update { it.copy(phase = GamePhase.START) }
+        cheatManager.resetAll()
+        _gameState.update { it.copy(phase = GamePhase.START, activeCheats = emptySet()) }
     }
 
     fun pauseGame() {
@@ -464,9 +509,14 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             
             // Add lives for score
             val oldScore = state.score
-            val newScoreTotal = oldScore + scoreGain
-            val livesFromScore = (newScoreTotal / 5000) - (oldScore / 5000)
-            newLives += livesFromScore
+            val isCheated = state.activeCheats.isNotEmpty()
+            val scoreGainFinal = if (isCheated) 0 else scoreGain
+            val newScoreTotal = oldScore + scoreGainFinal
+            
+            if (!isCheated) {
+                val livesFromScore = (newScoreTotal / 5000) - (oldScore / 5000)
+                newLives += livesFromScore
+            }
             
             // Collect powerups
             val collectedPowerUps = currentPowerUps.filter { it.getRect().overlaps(baseShip.getVisualRect()) }
@@ -519,7 +569,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 nextSuperbossDirection = 1f
             }
 
-            state.copy(
+            val nextState = state.copy(
                 ship = finalShip,
                 bullets = finalBullets,
                 alienBullets = updatedAlienBullets,
@@ -528,7 +578,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 explosions = currentExplosions,
                 powerUps = currentPowerUps,
                 activePowerUp = nextActivePowerUp,
-                score = state.score + scoreGain,
+                score = state.score + scoreGainFinal,
                 lives = newLives,
                 level = nextLevel,
                 formationX = nextFormationX,
@@ -537,6 +587,12 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 screenShakeIntensity = finalShake,
                 phase = nextPhase
             )
+            
+            if (!isCheated && nextState.score > nextState.highScore) {
+                nextState.copy(highScore = nextState.score)
+            } else {
+                nextState
+            }
         }
     }
 }

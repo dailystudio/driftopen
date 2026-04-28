@@ -10,10 +10,23 @@ class CheatManager {
     private val _activatedCheats = MutableStateFlow<Set<CheatType>>(emptySet())
     val activatedCheats = _activatedCheats.asStateFlow()
 
-    fun onStartScreenTap() {
+    fun onStartScreenTap(): Boolean {
         startScreenTapCount++
-        if (startScreenTapCount >= 10) {
-            activateCheat(CheatType.INVINCIBILITY)
+        return startScreenTapCount >= 10
+    }
+
+    fun validateCode(code: String): Pair<CheatType, Int?>? {
+        return when {
+            code == "7777" -> CheatType.INVINCIBILITY to null
+            code == "9999" -> CheatType.LIVES_99 to null
+            code.length == 4 && code.endsWith("X") -> {
+                val levelStr = code.substring(0, 3)
+                val level = levelStr.toIntOrNull()
+                if (level != null && level in 1..999) {
+                    CheatType.LEVEL_SELECT to level
+                } else null
+            }
+            else -> null
         }
     }
 
