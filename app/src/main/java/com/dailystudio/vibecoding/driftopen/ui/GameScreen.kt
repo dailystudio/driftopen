@@ -16,16 +16,73 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.dailystudio.vibecoding.driftopen.game.GameEngine
 import com.dailystudio.vibecoding.driftopen.game.models.*
+import androidx.compose.ui.graphics.toArgb
+
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import android.graphics.Bitmap
 
 @Composable
 fun GameScreen(engine: GameEngine) {
     val state by engine.gameState.collectAsState()
     val BASE_WIDTH = 1080f
+
+    // Pre-rendered bitmaps for aliens
+    val alienBitmaps = remember(state.level) { mutableMapOf<String, ImageBitmap>() }
+    
+    fun getAlienBitmap(alien: Alien, scaleFactor: Float): ImageBitmap? {
+        val key = "${alien.skinId}_${alien.type}_${alien.color.toArgb()}_${alien.width}_${alien.height}"
+        return alienBitmaps.getOrPut(key) {
+            val width = (alien.width * scaleFactor).toInt().coerceAtLeast(1)
+            val height = (alien.height * scaleFactor).toInt().coerceAtLeast(1)
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            
+            val skins = GamePaths.alienSkins[alien.skinId] ?: GamePaths.alienSkins["default"]!!
+            val path = skins[alien.type] ?: skins[AlienType.NORMAL]!!
+            
+            // Simplified: let's use a temporary Compose Canvas to draw into the bitmap
+            val composeCanvas = androidx.compose.ui.graphics.Canvas(bitmap.asImageBitmap())
+            
+            // Render at 1.0 scale into the bitmap
+            val alienDrawScope = androidx.compose.ui.graphics.drawscope.CanvasDrawScope()
+            alienDrawScope.draw(
+                androidx.compose.ui.unit.Density(1f),
+                androidx.compose.ui.unit.LayoutDirection.Ltr,
+                composeCanvas,
+                Size(width.toFloat(), height.toFloat())
+            ) {
+                // DrawScope
+                translate(width / 2f, height / 2f) {
+                    scale(width.toFloat(), height.toFloat(), pivot = Offset.Zero) {
+                        drawPath(path, color = alien.color)
+                        
+                        if (alien.type != AlienType.SUPERBOSS) {
+                            drawPath(path, color = Color.White.copy(alpha = 0.3f), style = Stroke(width = 2f / width))
+                        }
+                        
+                        // Eyes
+                        val w = 0.5f
+                        val h = 0.5f
+                        val eyeOffset = w * 0.3f
+                        val eyeSize = w * 0.2f
+                        drawCircle(Color.White, radius = eyeSize, center = Offset(-eyeOffset, -h * 0.2f))
+                        drawCircle(Color.White, radius = eyeSize, center = Offset(eyeOffset, -h * 0.2f))
+                        drawCircle(Color.Black, radius = eyeSize * 0.5f, center = Offset(-eyeOffset, -h * 0.2f))
+                        drawCircle(Color.Black, radius = eyeSize * 0.5f, center = Offset(eyeOffset, -h * 0.2f))
+                    }
+                }
+            }
+            
+            bitmap.asImageBitmap()
+        }
+    }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -103,43 +160,51 @@ fun GameScreen(engine: GameEngine) {
 
             // Draw aliens
             state.aliens.forEach { alien ->
-                val w = alien.width / 2
-                val h = alien.height / 2
-                val skins = GamePaths.alienSkins[alien.skinId] ?: GamePaths.alienSkins["default"]!!
-                val path = skins[alien.type] ?: skins[AlienType.NORMAL]!!
-                
-                drawContext.canvas.save()
-                drawContext.canvas.translate(alien.x, alien.y)
-                drawContext.canvas.scale(alien.width, alien.height)
-                drawPath(path, color = alien.color)
-                
-                if (alien.type != AlienType.SUPERBOSS) {
-                    drawPath(path, color = Color.White.copy(alpha = 0.3f), style = Stroke(width = 2f / alien.width))
-                } else {
+                if (alien.type == AlienType.SUPERBOSS) {
+                    // Draw Superboss with high-quality paths as there's only one
+                    val skins = GamePaths.alienSkins[alien.skinId] ?: GamePaths.alienSkins["default"]!!
+                    val path = skins[alien.type] ?: skins[AlienType.NORMAL]!!
+                    
+                    drawContext.canvas.save()
+                    drawContext.canvas.translate(alien.x, alien.y)
+                    drawContext.canvas.scale(alien.width, alien.height)
+                    drawPath(path, color = alien.color)
                     drawPath(path, color = Color.Yellow.copy(alpha = 0.5f), style = Stroke(width = 4f / alien.width))
-                }
-                drawContext.canvas.restore()
+                    drawContext.canvas.restore()
 
-                // Eyes (still simple circles)
-                val eyeOffset = w * 0.3f
-                val eyeSize = w * 0.2f
-                drawCircle(Color.White, radius = eyeSize, center = Offset(alien.x - eyeOffset, alien.y - h * 0.2f))
-                drawCircle(Color.White, radius = eyeSize, center = Offset(alien.x + eyeOffset, alien.y - h * 0.2f))
-                drawCircle(Color.Black, radius = eyeSize * 0.5f, center = Offset(alien.x - eyeOffset, alien.y - h * 0.2f))
-                drawCircle(Color.Black, radius = eyeSize * 0.5f, center = Offset(alien.x + eyeOffset, alien.y - h * 0.2f))
+                    // Eyes
+                    val w = alien.width / 2
+                    val h = alien.height / 2
+                    val eyeOffset = w * 0.3f
+                    val eyeSize = w * 0.2f
+                    drawCircle(Color.White, radius = eyeSize, center = Offset(alien.x - eyeOffset, alien.y - h * 0.2f))
+                    drawCircle(Color.White, radius = eyeSize, center = Offset(alien.x + eyeOffset, alien.y - h * 0.2f))
+                    drawCircle(Color.Black, radius = eyeSize * 0.5f, center = Offset(alien.x - eyeOffset, alien.y - h * 0.2f))
+                    drawCircle(Color.Black, radius = eyeSize * 0.5f, center = Offset(alien.x + eyeOffset, alien.y - h * 0.2f))
+                } else {
+                    // Use optimized bitmap for normal aliens
+                    val bitmap = getAlienBitmap(alien, scaleFactor)
+                    if (bitmap != null) {
+                        drawImage(
+                            image = bitmap,
+                            topLeft = Offset(alien.x - alien.width / 2, alien.y - alien.height / 2)
+                        )
+                    }
+                }
                 
-                // Health bar
+                // Health bar (only if damaged)
                 if (alien.health < alien.maxHealth) {
                     val barWidth = alien.width * 0.8f
                     val healthWidth = barWidth * (alien.health.toFloat() / alien.maxHealth)
+                    val barTop = alien.y + alien.height / 2 + 10f
                     drawRect(
                         color = Color.Gray,
-                        topLeft = Offset(alien.x - barWidth / 2, alien.y + alien.height / 2 + 10f),
+                        topLeft = Offset(alien.x - barWidth / 2, barTop),
                         size = Size(barWidth, 6f)
                     )
                     drawRect(
                         color = Color.Green,
-                        topLeft = Offset(alien.x - barWidth / 2, alien.y + alien.height / 2 + 10f),
+                        topLeft = Offset(alien.x - barWidth / 2, barTop),
                         size = Size(healthWidth, 6f)
                     )
                 }
