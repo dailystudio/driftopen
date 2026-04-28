@@ -183,11 +183,27 @@ fun GameScreen(engine: GameEngine) {
 
             // Draw alien bullets
             state.alienBullets.forEach { bullet ->
-                drawRect(
-                    color = Color.Red,
-                    topLeft = Offset(bullet.x - 3f, bullet.y),
-                    size = Size(6f, 20f)
-                )
+                when (bullet.type) {
+                    BulletType.CIRCLE -> {
+                        drawCircle(
+                            color = Color.Red,
+                            radius = 10f,
+                            center = Offset(bullet.x, bullet.y)
+                        )
+                        drawCircle(
+                            color = Color.White,
+                            radius = 4f,
+                            center = Offset(bullet.x, bullet.y)
+                        )
+                    }
+                    else -> {
+                        drawRect(
+                            color = Color.Red,
+                            topLeft = Offset(bullet.x - 3f, bullet.y),
+                            size = Size(6f, 20f)
+                        )
+                    }
+                }
             }
 
             // Draw power-ups

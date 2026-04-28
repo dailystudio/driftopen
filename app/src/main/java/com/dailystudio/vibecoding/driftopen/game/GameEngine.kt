@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.random.Random
-import kotlin.math.sqrt
+import kotlin.math.*
 
 class GameEngine(private val soundManager: SoundManager? = null) {
     private val _gameState = MutableStateFlow(GameState())
@@ -156,6 +156,9 @@ class GameEngine(private val soundManager: SoundManager? = null) {
         if (cappedLevel % 5 == 0) {
             // Superboss level
             val health = 30 + cappedLevel * 2
+            val skinId = "superboss_${Random.nextInt(10)}"
+            val patternId = Random.nextInt(5)
+
             return listOf(
                 Alien(
                     id = 0,
@@ -170,7 +173,9 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                     color = Color.White,
                     type = AlienType.SUPERBOSS,
                     health = health,
-                    maxHealth = health
+                    maxHealth = health,
+                    skinId = skinId,
+                    patternId = patternId
                 )
             )
         }
@@ -332,13 +337,13 @@ class GameEngine(private val soundManager: SoundManager? = null) {
 
                 if (bullet.type == BulletType.HOMING) {
                     val target = state.aliens.find { it.id == bullet.targetId } 
-                        ?: state.aliens.minByOrNull { kotlin.math.hypot(it.x - bullet.x, it.y - bullet.y) }
+                        ?: state.aliens.minByOrNull { hypot(it.x - bullet.x, it.y - bullet.y) }
                     
                     target?.let {
                         ntargetId = it.id
                         val dx = it.x - bullet.x
                         val dy = it.y - bullet.y
-                        val dist = kotlin.math.hypot(dx, dy)
+                        val dist = hypot(dx, dy)
                         if (dist > 0) {
                             nvx = (nvx + (dx / dist) * 2f).coerceIn(-10f, 10f)
                         }
@@ -347,8 +352,21 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 bullet.copy(x = nx, y = ny, vx = nvx, targetId = ntargetId)
             }.filter { it.y > -100f && it.x > -100f && it.x < state.screenWidth + 100f }
             
-            val newAlienBullets = state.alienBullets.map { it.copy(y = it.y + it.speed * 0.5f) }
-                .filter { it.y < state.screenHeight + 50f }
+            val newAlienBullets = state.alienBullets.map { bullet ->
+                var nx = bullet.x + bullet.vx
+                var ny = bullet.y - bullet.speed // Note: speed is negative for downward movement in most patterns
+                var nvx = bullet.vx
+
+                if (bullet.type == BulletType.HOMING) {
+                    val dx = state.ship.x - bullet.x
+                    val dy = (state.ship.y - 120f) - bullet.y
+                    val dist = hypot(dx, dy)
+                    if (dist > 0) {
+                        nvx = (nvx + (dx / dist) * 0.5f).coerceIn(-5f, 5f)
+                    }
+                }
+                bullet.copy(x = nx, y = ny, vx = nvx)
+            }.filter { it.y < state.screenHeight + 50f && it.y > -100f && it.x > -100f && it.x < state.screenWidth + 100f }
 
             val newStars = state.stars.map {
                 val newY = it.y + it.speed
@@ -418,7 +436,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                     val freq = if (alien.type == AlienType.FAST) 2f else 1f
                     val amp = if (alien.type == AlienType.BOSS) 20f else 10f
                     
-                    val diveX = alien.x + kotlin.math.sin(phase * freq) * amp
+                    val diveX = alien.x + sin(phase * freq) * amp
                     val diveY = alien.y + 12f * speedMultiplier
                     if (diveY > state.screenHeight + 50f) {
                         alien.copy(y = -50f, isAttacking = false, attackPhase = 0f, readyTime = System.currentTimeMillis() + 1000L)
@@ -432,8 +450,8 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                     val dx = targetX - alien.x
                     val dy = targetY - alien.y
                     
-                    val newX = if (kotlin.math.abs(dx) < 2f) targetX else alien.x + dx * 0.1f
-                    val newY = if (kotlin.math.abs(dy) < 2f) targetY else alien.y + dy * 0.1f
+                    val newX = if (abs(dx) < 2f) targetX else alien.x + dx * 0.1f
+                    val newY = if (abs(dy) < 2f) targetY else alien.y + dy * 0.1f
                     
                     alien.copy(x = newX, y = newY)
                 }
@@ -463,30 +481,86 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             var updatedAlienBullets = newAlienBullets
             val shootChance = (3 + state.level * 0.5f).toInt()
             if (Random.nextInt(100) < shootChance && nextAliens.isNotEmpty()) {
-                val shooter = nextAliens.random()
+                val shooterIndex = nextAliens.indices.random()
+                val shooter = nextAliens[shooterIndex]
+                
                 if (shooter.y > 0) {
-                    if (shooter.type == AlienType.SUPERBOSS) {
-                        val healthPct = shooter.health.toFloat() / shooter.maxHealth
-                        if (healthPct < 0.5f) {
-                            // 5-way spread
-                            updatedAlienBullets = updatedAlienBullets + listOf(
-                                Bullet(shooter.x - 60f, shooter.y + 40f, vx = -4f, speed = 8f),
-                                Bullet(shooter.x - 30f, shooter.y + 60f, vx = -2f, speed = 10f),
-                                Bullet(shooter.x, shooter.y + 80f, vx = 0f, speed = 12f),
-                                Bullet(shooter.x + 30f, shooter.y + 60f, vx = 2f, speed = 10f),
-                                Bullet(shooter.x + 60f, shooter.y + 40f, vx = 4f, speed = 8f)
-                            )
-                        } else {
-                            // 3-way spread
-                            updatedAlienBullets = updatedAlienBullets + listOf(
-                                Bullet(shooter.x - 40f, shooter.y + 40f, speed = 10f),
-                                Bullet(shooter.x, shooter.y + 60f, speed = 12f),
-                                Bullet(shooter.x + 40f, shooter.y + 40f, speed = 10f)
-                            )
-                        }
-                    } else {
-                        updatedAlienBullets = updatedAlienBullets + Bullet(shooter.x, shooter.y + shooter.height / 2)
+                    // Dynamic Pattern Switching for Superboss
+                    if (shooter.type == AlienType.SUPERBOSS && Random.nextInt(100) < 15) {
+                        nextAliens[shooterIndex] = shooter.copy(patternId = Random.nextInt(5))
                     }
+                    
+                    val newBullets = when (shooter.type) {
+                        AlienType.SUPERBOSS -> {
+                            val healthPct = shooter.health.toFloat() / shooter.maxHealth
+                            when (shooter.patternId) {
+                                1 -> { // Spiral/Omni
+                                    List(8) { i ->
+                                        val angle = (i * 45f) * (PI / 180f).toFloat()
+                                        Bullet(shooter.x, shooter.y + 40f, vx = 8f * cos(angle.toDouble()).toFloat(), speed = -8f * sin(angle.toDouble()).toFloat(), type = BulletType.CIRCLE)
+                                    }
+                                }
+                                2 -> { // Shotgun (Dense downward cone)
+                                    List(7) { i ->
+                                        Bullet(shooter.x, shooter.y + 40f, vx = (i - 3) * 3f, speed = -12f)
+                                    }
+                                }
+                                3 -> { // Sniper (Direct at player)
+                                    val dx = state.ship.x - shooter.x
+                                    val dy = (state.ship.y - 120f) - shooter.y
+                                    val dist = hypot(dx, dy)
+                                    if (dist > 0) {
+                                        listOf(
+                                            Bullet(shooter.x - 20f, shooter.y + 40f, vx = (dx / dist) * 15f, speed = -(dy / dist) * 15f),
+                                            Bullet(shooter.x + 20f, shooter.y + 40f, vx = (dx / dist) * 15f, speed = -(dy / dist) * 15f)
+                                        )
+                                    } else emptyList()
+                                }
+                                4 -> { // Homing Swarm
+                                    List(3) { i ->
+                                        Bullet(shooter.x + (i - 1) * 40f, shooter.y + 40f, speed = -8f, type = BulletType.HOMING)
+                                    }
+                                }
+                                else -> { // Classic Spread (patternId 0)
+                                    if (healthPct < 0.5f) {
+                                        listOf(
+                                            Bullet(shooter.x - 60f, shooter.y + 40f, vx = -4f, speed = -8f),
+                                            Bullet(shooter.x - 30f, shooter.y + 60f, vx = -2f, speed = -10f),
+                                            Bullet(shooter.x, shooter.y + 80f, vx = 0f, speed = -12f),
+                                            Bullet(shooter.x + 30f, shooter.y + 60f, vx = 2f, speed = -10f),
+                                            Bullet(shooter.x + 60f, shooter.y + 40f, vx = 4f, speed = -8f)
+                                        )
+                                    } else {
+                                        listOf(
+                                            Bullet(shooter.x - 40f, shooter.y + 40f, speed = -10f),
+                                            Bullet(shooter.x, shooter.y + 60f, speed = -12f),
+                                            Bullet(shooter.x + 40f, shooter.y + 40f, speed = -10f)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        AlienType.BOSS -> {
+                            when (shooter.patternId) {
+                                1 -> { // Circular (partially)
+                                    listOf(
+                                        Bullet(shooter.x, shooter.y + 20f, vx = -3f, speed = -8f),
+                                        Bullet(shooter.x, shooter.y + 20f, vx = 0f, speed = -10f),
+                                        Bullet(shooter.x, shooter.y + 20f, vx = 3f, speed = -8f)
+                                    )
+                                }
+                                2 -> { // Rapid Burst
+                                    listOf(
+                                        Bullet(shooter.x, shooter.y + 20f, speed = -12f),
+                                        Bullet(shooter.x, shooter.y + 50f, speed = -12f)
+                                    )
+                                }
+                                else -> listOf(Bullet(shooter.x, shooter.y + shooter.height / 2, speed = -10f))
+                            }
+                        }
+                        else -> listOf(Bullet(shooter.x, shooter.y + shooter.height / 2, speed = -10f))
+                    }
+                    updatedAlienBullets = updatedAlienBullets + newBullets
                 }
             }
 
@@ -511,7 +585,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                         currentExplosions.add(Explosion(bullet.x, bullet.y, Color.Red, radius = 50f, life = 30))
                         // AOE Damage
                         nextAliens.forEachIndexed { idx, a ->
-                            val dist = kotlin.math.hypot(a.x - bullet.x, a.y - bullet.y)
+                            val dist = hypot(a.x - bullet.x, a.y - bullet.y)
                             if (dist < 150f) {
                                 val updatedA = a.copy(health = a.health - 5)
                                 nextAliens[idx] = updatedA

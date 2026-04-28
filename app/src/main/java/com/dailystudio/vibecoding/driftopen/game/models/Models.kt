@@ -76,6 +76,7 @@ data class Alien(
     val isAttacking: Boolean = false,
     val attackPhase: Float = 0f,
     val skinId: String = "default",
+    val patternId: Int = 0,
     val readyTime: Long = 0L
 ) {
     fun getRect() = Rect(Offset(x - width / 2, y - height / 2), Offset(x + width / 2, y + height / 2))
@@ -90,7 +91,7 @@ enum class AlienType {
 }
 
 enum class BulletType {
-    NORMAL, SPREAD, LASER, HOMING, BOMB
+    NORMAL, SPREAD, LASER, HOMING, BOMB, CIRCLE
 }
 
 data class Bullet(

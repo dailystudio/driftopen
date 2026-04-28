@@ -87,6 +87,13 @@ object FormationGenerator {
         scale: Float
     ): Alien {
         val health = if (type == AlienType.BOSS) 3 else 1
+        val skinId = if (type == AlienType.BOSS) {
+            listOf("default", "boss_a", "boss_b").random()
+        } else "default"
+        val patternId = if (type == AlienType.BOSS) {
+            Random.nextInt(3) // 0: single, 1: circular, 2: burst
+        } else 0
+
         return Alien(
             id = id,
             x = x,
@@ -101,7 +108,8 @@ object FormationGenerator {
             height = 50f * scale,
             health = health,
             maxHealth = health,
-            skinId = "default"
+            skinId = skinId,
+            patternId = patternId
         )
     }
 
