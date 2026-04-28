@@ -37,11 +37,11 @@ fun GameScreen(engine: GameEngine) {
     // Pre-rendered bitmaps for aliens
     val alienBitmaps = remember(state.level) { mutableMapOf<String, ImageBitmap>() }
     
-    fun getAlienBitmap(alien: Alien, scaleFactor: Float): ImageBitmap? {
+    fun getAlienBitmap(alien: Alien): ImageBitmap? {
         val key = "${alien.skinId}_${alien.type}_${alien.color.toArgb()}_${alien.width}_${alien.height}"
         return alienBitmaps.getOrPut(key) {
-            val width = (alien.width * scaleFactor).toInt().coerceAtLeast(1)
-            val height = (alien.height * scaleFactor).toInt().coerceAtLeast(1)
+            val width = alien.width.toInt().coerceAtLeast(1)
+            val height = alien.height.toInt().coerceAtLeast(1)
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             
             val skins = GamePaths.alienSkins[alien.skinId] ?: GamePaths.alienSkins["default"]!!
@@ -183,7 +183,7 @@ fun GameScreen(engine: GameEngine) {
                     drawCircle(Color.Black, radius = eyeSize * 0.5f, center = Offset(alien.x + eyeOffset, alien.y - h * 0.2f))
                 } else {
                     // Use optimized bitmap for normal aliens
-                    val bitmap = getAlienBitmap(alien, scaleFactor)
+                    val bitmap = getAlienBitmap(alien)
                     if (bitmap != null) {
                         drawImage(
                             image = bitmap,
