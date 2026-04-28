@@ -9,6 +9,10 @@ import kotlin.random.Random
 
 object FormationGenerator {
 
+    private fun getScale(level: Int): Float {
+        return (1.0f / sqrt(level.toFloat() / 15f)).coerceAtMost(1.0f).coerceAtLeast(0.4f)
+    }
+
     fun generateFormation(
         type: FormationType,
         level: Int,
@@ -16,13 +20,38 @@ object FormationGenerator {
         spacing: Float,
         startY: Float
     ): List<Alien> {
+        val baseScale = getScale(level)
+        
+        // Calculate max columns/width for the given level and type
+        val maxCols = when (type) {
+            FormationType.GRID -> (6 + level / 2).toFloat()
+            FormationType.V_SHAPE -> ((4 + level / 2) * 2 - 1).toFloat()
+            FormationType.DIAMOND -> ((3 + level / 2) * 2 + 1).toFloat()
+            FormationType.CIRCLE -> (2 + level * 0.4f) * 2f
+            FormationType.HEART -> {
+                val heartScale = (spacing / 8) * (1f + level * 0.05f).coerceAtMost(2.5f)
+                // Heart width is roughly 32 * heartScale
+                (32 * heartScale) / spacing
+            }
+            FormationType.RANDOM_SCATTER -> screenWidth / spacing
+        }
+        
+        // Ensure formation width doesn't exceed 90% of screen
+        val predictedWidth = maxCols * spacing * baseScale
+        val widthScale = if (predictedWidth > screenWidth * 0.9f) {
+            (screenWidth * 0.9f) / predictedWidth
+        } else 1.0f
+        
+        val finalScale = baseScale * widthScale
+        val scaledSpacing = spacing * finalScale
+        
         return when (type) {
-            FormationType.GRID -> generateGrid(level, screenWidth, spacing, startY)
-            FormationType.V_SHAPE -> generateVShape(level, screenWidth, spacing, startY)
-            FormationType.DIAMOND -> generateDiamond(level, screenWidth, spacing, startY)
-            FormationType.CIRCLE -> generateCircle(level, screenWidth, spacing, startY)
-            FormationType.HEART -> generateHeart(level, screenWidth, spacing, startY)
-            FormationType.RANDOM_SCATTER -> generateRandomScatter(level, screenWidth, spacing, startY)
+            FormationType.GRID -> generateGrid(level, screenWidth, scaledSpacing, startY, finalScale)
+            FormationType.V_SHAPE -> generateVShape(level, screenWidth, scaledSpacing, startY, finalScale)
+            FormationType.DIAMOND -> generateDiamond(level, screenWidth, scaledSpacing, startY, finalScale)
+            FormationType.CIRCLE -> generateCircle(level, screenWidth, scaledSpacing, startY, finalScale)
+            FormationType.HEART -> generateHeart(level, screenWidth, scaledSpacing, startY, finalScale)
+            FormationType.RANDOM_SCATTER -> generateRandomScatter(level, screenWidth, scaledSpacing, startY, finalScale)
         }
     }
 
@@ -54,7 +83,8 @@ object FormationGenerator {
         col: Int,
         row: Int,
         type: AlienType,
-        color: Color
+        color: Color,
+        scale: Float
     ): Alien {
         val health = if (type == AlienType.BOSS) 3 else 1
         return Alien(
@@ -67,13 +97,15 @@ object FormationGenerator {
             gridRow = row,
             type = type,
             color = color,
+            width = 50f * scale,
+            height = 50f * scale,
             health = health,
             maxHealth = health,
             skinId = "default"
         )
     }
 
-    private fun generateGrid(level: Int, screenWidth: Float, spacing: Float, startY: Float): List<Alien> {
+    private fun generateGrid(level: Int, screenWidth: Float, spacing: Float, startY: Float, scale: Float): List<Alien> {
         val aliens = mutableListOf<Alien>()
         val rows = 4 + (level / 2)
         val cols = 6 + (level / 2)
@@ -86,13 +118,13 @@ object FormationGenerator {
             for (col in 0 until cols) {
                 val ox = col * spacing
                 val oy = row * spacing
-                aliens.add(createAlien(idCounter++, formationX + ox, startY + oy, ox, oy, col, row, type, color))
+                aliens.add(createAlien(idCounter++, formationX + ox, startY + oy, ox, oy, col, row, type, color, scale))
             }
         }
         return aliens
     }
 
-    private fun generateVShape(level: Int, screenWidth: Float, spacing: Float, startY: Float): List<Alien> {
+    private fun generateVShape(level: Int, screenWidth: Float, spacing: Float, startY: Float, scale: Float): List<Alien> {
         val aliens = mutableListOf<Alien>()
         val rows = 4 + (level / 2)
         val centerX = screenWidth / 2
@@ -103,13 +135,13 @@ object FormationGenerator {
             for (col in -row..row) {
                 val ox = col * spacing
                 val oy = row * spacing
-                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, col, row, type, color))
+                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, col, row, type, color, scale))
             }
         }
         return aliens
     }
 
-    private fun generateDiamond(level: Int, screenWidth: Float, spacing: Float, startY: Float): List<Alien> {
+    private fun generateDiamond(level: Int, screenWidth: Float, spacing: Float, startY: Float, scale: Float): List<Alien> {
         val aliens = mutableListOf<Alien>()
         val size = 3 + (level / 2) // Half height of diamond
         val centerX = screenWidth / 2
@@ -122,15 +154,15 @@ object FormationGenerator {
             for (col in -colsInRow..colsInRow) {
                 val ox = col * spacing
                 val oy = (row + size) * spacing
-                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, col, row + size, type, color))
+                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, col, row + size, type, color, scale))
             }
         }
         return aliens
     }
 
-    private fun generateCircle(level: Int, screenWidth: Float, spacing: Float, startY: Float): List<Alien> {
+    private fun generateCircle(level: Int, screenWidth: Float, spacing: Float, startY: Float, scale: Float): List<Alien> {
         val aliens = mutableListOf<Alien>()
-        val maxRadius = spacing * (2 + level * 0.2f)
+        val maxRadius = spacing * (2 + level * 0.4f)
         val centerX = screenWidth / 2
         var idCounter = 0
         
@@ -139,7 +171,7 @@ object FormationGenerator {
             val radius = ring * spacing
             if (radius == 0f) {
                 val (type, color) = getAlienProperties(0, level)
-                aliens.add(createAlien(idCounter++, centerX, startY + maxRadius, 0f, maxRadius, 0, 0, type, color))
+                aliens.add(createAlien(idCounter++, centerX, startY + maxRadius, 0f, maxRadius, 0, 0, type, color, scale))
                 continue
             }
             
@@ -150,22 +182,22 @@ object FormationGenerator {
                 val ox = radius * cos(angle).toFloat()
                 val oy = maxRadius + radius * sin(angle).toFloat()
                 val (type, color) = getAlienProperties(ring % 3, level)
-                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, i, ring, type, color))
+                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, i, ring, type, color, scale))
             }
         }
         return aliens
     }
 
-    private fun generateHeart(level: Int, screenWidth: Float, spacing: Float, startY: Float): List<Alien> {
+    private fun generateHeart(level: Int, screenWidth: Float, spacing: Float, startY: Float, scale: Float): List<Alien> {
         val aliens = mutableListOf<Alien>()
         val centerX = screenWidth / 2
-        val scale = spacing / 8
+        val heartScale = (spacing / 8) * (1f + level * 0.05f).coerceAtMost(2.5f)
         val verticalOffset = spacing * 4
         var idCounter = 0
 
         val ringCount = 5
         for (ring in 1..ringCount) {
-            val ringScale = scale * (ring.toFloat() / ringCount)
+            val ringScale = heartScale * (ring.toFloat() / ringCount)
             val count = 8 + ring * 4
             for (i in 0 until count) {
                 val t = 2 * PI * i / count
@@ -175,17 +207,17 @@ object FormationGenerator {
                 val ox = hx.toFloat() * ringScale
                 val oy = verticalOffset + hy.toFloat() * ringScale
                 val (type, color) = getAlienProperties(ring % 3, level)
-                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, i, ring, type, color))
+                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, i, ring, type, color, scale))
             }
         }
         // Center alien
         val (type, color) = getAlienProperties(0, level)
-        aliens.add(createAlien(idCounter++, centerX, startY + verticalOffset, 0f, verticalOffset, 0, 0, type, color))
+        aliens.add(createAlien(idCounter++, centerX, startY + verticalOffset, 0f, verticalOffset, 0, 0, type, color, scale))
         
         return aliens
     }
 
-    private fun generateRandomScatter(level: Int, screenWidth: Float, spacing: Float, startY: Float): List<Alien> {
+    private fun generateRandomScatter(level: Int, screenWidth: Float, spacing: Float, startY: Float, scale: Float): List<Alien> {
         val aliens = mutableListOf<Alien>()
         val count = 10 + level
         var idCounter = 0
@@ -196,7 +228,7 @@ object FormationGenerator {
             val (type, color) = getAlienProperties(i % 3, level)
             // For scatter, we still want them to move with formationX, so we calculate offset from center
             val ox = rx - centerX
-            aliens.add(createAlien(idCounter++, rx, startY + ry, ox, ry, i, 0, type, color))
+            aliens.add(createAlien(idCounter++, rx, startY + ry, ox, ry, i, 0, type, color, scale))
         }
         return aliens
     }

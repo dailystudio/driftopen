@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlin.random.Random
+import kotlin.math.sqrt
 
 class GameEngine(private val soundManager: SoundManager? = null) {
     private val _gameState = MutableStateFlow(GameState())
@@ -16,6 +17,10 @@ class GameEngine(private val soundManager: SoundManager? = null) {
     private var lastAttackTime = 0L
 
     init {
+    }
+
+    private fun getScale(level: Int): Float {
+        return (1.0f / sqrt(level.toFloat() / 15f)).coerceAtMost(1.0f).coerceAtLeast(0.4f)
     }
 
     fun recordStartScreenTap() {
@@ -119,8 +124,29 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             else -> FormationType.GRID
         }
 
+        val baseScale = getScale(level)
+        val maxCols = when (formationType) {
+            FormationType.GRID -> (6 + level / 2).toFloat()
+            FormationType.V_SHAPE -> ((4 + level / 2) * 2 - 1).toFloat()
+            FormationType.DIAMOND -> ((3 + level / 2) * 2 + 1).toFloat()
+            FormationType.CIRCLE -> (2 + level * 0.4f) * 2f
+            FormationType.HEART -> {
+                val heartScale = (spacing / 8) * (1f + level * 0.05f).coerceAtMost(2.5f)
+                (32 * heartScale) / spacing
+            }
+            FormationType.RANDOM_SCATTER -> screenWidth / spacing
+        }
+        
+        val predictedWidth = maxCols * spacing * baseScale
+        val widthScale = if (predictedWidth > screenWidth * 0.9f) {
+            (screenWidth * 0.9f) / predictedWidth
+        } else 1.0f
+        
+        val finalScale = baseScale * widthScale
+        val currentSpacing = spacing * finalScale
+
         return when (formationType) {
-            FormationType.GRID -> (screenWidth - (6 + (level / 2) - 1) * spacing) / 2
+            FormationType.GRID -> (screenWidth - (6 + (level / 2) - 1) * currentSpacing) / 2
             else -> screenWidth / 2
         }
     }
@@ -335,9 +361,9 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 .filter { it.y < state.screenHeight + 50f }
 
             // Move formation
-            val levelBonus = (state.level - 1) * 0.3f
+            val formationSpeed = 4f // Static speed as requested
             var nextMoveDirection = state.alienMoveDirection
-            var nextFormationX = state.formationX + nextMoveDirection * (2f + levelBonus)
+            var nextFormationX = state.formationX + nextMoveDirection * formationSpeed
             var nextSuperbossDirection = state.superbossDirection
             
             // Boundary check for formation
@@ -345,10 +371,13 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             if (formationAliens.isNotEmpty()) {
                 val minX = formationAliens.minOf { it.x }
                 val maxX = formationAliens.maxOf { it.x }
+                val centerX = (minX + maxX) / 2
                 
-                if (minX < 50f && nextMoveDirection < 0) {
+                // Allow the formation to move until its center hits the screen edge
+                // This allows wide formations to move partially off-screen for a better sweep
+                if (centerX < 0f && nextMoveDirection < 0) {
                     nextMoveDirection = 1f
-                } else if (maxX > state.screenWidth - 50f && nextMoveDirection > 0) {
+                } else if (centerX > state.screenWidth && nextMoveDirection > 0) {
                     nextMoveDirection = -1f
                 }
             }
