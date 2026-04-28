@@ -284,11 +284,16 @@ fun GameScreen(engine: GameEngine) {
 
                 // Cheat indicator
                 if (state.activeCheats.isNotEmpty()) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.BottomStart) {
+                    Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.BottomStart) {
                         Column {
                             state.activeCheats.forEach { cheat ->
+                                val displayName = when(cheat) {
+                                    CheatType.INVINCIBILITY -> "INVINCIBILITY"
+                                    CheatType.LIVES_99 -> "99 LIVES"
+                                    CheatType.LEVEL_SELECT -> "LEVEL SELECT"
+                                }
                                 Text(
-                                    text = "CHEAT: ${cheat.name}",
+                                    text = "CHEAT ACTIVE: $displayName",
                                     color = Color.Red.copy(alpha = 0.7f),
                                     style = MaterialTheme.typography.labelSmall
                                 )
@@ -302,65 +307,82 @@ fun GameScreen(engine: GameEngine) {
         // Overlays
         when (state.phase) {
             GamePhase.START -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.8f))
-                        .pointerInput(Unit) {
-                            detectTapGestures {
-                                engine.recordStartScreenTap()
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.8f))
+                            .pointerInput(Unit) {
+                                detectTapGestures {
+                                    engine.recordStartScreenTap()
+                                }
+                            },
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        // Game Logo
+                        Canvas(modifier = Modifier.size(150.dp)) {
+                            val w = size.width
+                            val h = size.height
+                            val logoPath = Path().apply {
+                                // Futuristic G-shape / Wings
+                                moveTo(w * 0.1f, h * 0.5f)
+                                lineTo(w * 0.3f, h * 0.2f)
+                                lineTo(w * 0.7f, h * 0.2f)
+                                lineTo(w * 0.9f, h * 0.5f)
+                                lineTo(w * 0.7f, h * 0.8f)
+                                lineTo(w * 0.3f, h * 0.8f)
+                                close()
+                                
+                                // Core
+                                addOval(androidx.compose.ui.geometry.Rect(w * 0.4f, h * 0.4f, w * 0.6f, h * 0.6f))
                             }
-                        },
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Game Logo
-                    Canvas(modifier = Modifier.size(150.dp)) {
-                        val w = size.width
-                        val h = size.height
-                        val logoPath = Path().apply {
-                            // Futuristic G-shape / Wings
-                            moveTo(w * 0.1f, h * 0.5f)
-                            lineTo(w * 0.3f, h * 0.2f)
-                            lineTo(w * 0.7f, h * 0.2f)
-                            lineTo(w * 0.9f, h * 0.5f)
-                            lineTo(w * 0.7f, h * 0.8f)
-                            lineTo(w * 0.3f, h * 0.8f)
-                            close()
+                            drawPath(logoPath, Color.Cyan, style = Stroke(width = 4.dp.toPx()))
+                            drawPath(logoPath, Color.Cyan.copy(alpha = 0.3f))
                             
-                            // Core
-                            addOval(androidx.compose.ui.geometry.Rect(w * 0.4f, h * 0.4f, w * 0.6f, h * 0.6f))
+                            // Extra wing details
+                            drawLine(Color.Cyan, Offset(w * 0.3f, h * 0.2f), Offset(w * 0.1f, h * 0.1f), strokeWidth = 2.dp.toPx())
+                            drawLine(Color.Cyan, Offset(w * 0.7f, h * 0.2f), Offset(w * 0.9f, h * 0.1f), strokeWidth = 2.dp.toPx())
                         }
-                        drawPath(logoPath, Color.Cyan, style = Stroke(width = 4.dp.toPx()))
-                        drawPath(logoPath, Color.Cyan.copy(alpha = 0.3f))
                         
-                        // Extra wing details
-                        drawLine(Color.Cyan, Offset(w * 0.3f, h * 0.2f), Offset(w * 0.1f, h * 0.1f), strokeWidth = 2.dp.toPx())
-                        drawLine(Color.Cyan, Offset(w * 0.7f, h * 0.2f), Offset(w * 0.9f, h * 0.1f), strokeWidth = 2.dp.toPx())
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    Text(
-                        text = "DRIFTOPEN",
-                        color = Color.Cyan,
-                        style = MaterialTheme.typography.displayLarge
-                    )
-                    Text(
-                        text = "HI-SCORE: ${state.highScore}",
-                        color = Color.White,
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    if (state.activeCheats.contains(com.dailystudio.vibecoding.driftopen.game.models.CheatType.INVINCIBILITY)) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
                         Text(
-                            text = "CHEATS ACTIVE: INVINCIBILITY",
-                            color = Color.Red,
-                            style = MaterialTheme.typography.labelSmall
+                            text = "DRIFTOPEN",
+                            color = Color.Cyan,
+                            style = MaterialTheme.typography.displayLarge
                         )
+                        Text(
+                            text = "HI-SCORE: ${state.highScore}",
+                            color = Color.White,
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Spacer(modifier = Modifier.height(32.dp))
+                        Button(onClick = { engine.startGame() }) {
+                            Text("START GAME")
+                        }
                     }
-                    Spacer(modifier = Modifier.height(32.dp))
-                    Button(onClick = { engine.startGame() }) {
-                        Text("START GAME")
+
+                    // Bottom-left cheat indicator on title screen
+                    if (state.activeCheats.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(16.dp)
+                        ) {
+                            state.activeCheats.forEach { cheat ->
+                                val displayName = when(cheat) {
+                                    CheatType.INVINCIBILITY -> "INVINCIBILITY"
+                                    CheatType.LIVES_99 -> "99 LIVES"
+                                    CheatType.LEVEL_SELECT -> "LEVEL SELECT"
+                                }
+                                Text(
+                                    text = "CHEAT ACTIVE: $displayName",
+                                    color = Color.Red.copy(alpha = 0.6f),
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
                     }
                 }
             }

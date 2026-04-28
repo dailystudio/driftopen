@@ -19,10 +19,11 @@ class CheatManager {
         return when {
             code == "7777" -> CheatType.INVINCIBILITY to null
             code == "9999" -> CheatType.LIVES_99 to null
-            code.length == 4 && code.endsWith("X") -> {
-                val levelStr = code.substring(0, 3)
+            // Level Select: X + 2 digits + X (e.g., X05X)
+            code.startsWith("X") && code.endsWith("X") && code.length == 4 -> {
+                val levelStr = code.substring(1, 3)
                 val level = levelStr.toIntOrNull()
-                if (level != null && level in 1..999) {
+                if (level != null && level in 1..99) {
                     CheatType.LEVEL_SELECT to level
                 } else null
             }

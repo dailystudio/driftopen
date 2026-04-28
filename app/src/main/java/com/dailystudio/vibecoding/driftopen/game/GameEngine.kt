@@ -29,6 +29,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
         _gameState.update { state ->
             val newInput = state.cheatCodeInput + input
             val validation = cheatManager.validateCode(newInput)
+            
             if (validation != null) {
                 val (cheatType, extra) = validation
                 var nextState = state.copy(
@@ -50,9 +51,24 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 cheatManager.activateCheat(cheatType)
                 nextState
             } else {
-                // Limit input length to prevent overflow, e.g., max 10 chars
-                val limitedInput = if (newInput.length > 10) newInput.takeLast(10) else newInput
-                state.copy(cheatCodeInput = limitedInput, cheatMessage = "TYPING...")
+                // Specialized feedback for level select attempts
+                val message = when {
+                    // Only show invalid if it's a completed pattern that failed validation
+                    newInput.startsWith("X") && newInput.endsWith("X") && newInput.length > 1 -> {
+                        if (newInput.length == 4) "INVALID LEVEL" else "INVALID CODE"
+                    }
+                    newInput.length >= 5 && newInput.startsWith("X") -> "INVALID CODE"
+                    newInput.length >= 5 -> "INVALID CODE"
+                    else -> "TYPING..."
+                }
+                
+                // If it was an invalid level/code, clear input after showing message
+                if (message != "TYPING...") {
+                    state.copy(cheatCodeInput = "", cheatMessage = message)
+                } else {
+                    val limitedInput = if (newInput.length > 10) newInput.takeLast(10) else newInput
+                    state.copy(cheatCodeInput = limitedInput, cheatMessage = message)
+                }
             }
         }
     }
@@ -110,9 +126,10 @@ class GameEngine(private val soundManager: SoundManager? = null) {
     }
 
     private fun createAliens(screenWidth: Float, level: Int): List<Alien> {
-        if (level % 5 == 0) {
+        val cappedLevel = level.coerceIn(1, 99)
+        if (cappedLevel % 5 == 0) {
             // Superboss level
-            val health = 30 + level * 2
+            val health = 30 + cappedLevel * 2
             return listOf(
                 Alien(
                     id = 0,
@@ -132,7 +149,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             )
         }
 
-        val formationType = when (level % 5) {
+        val formationType = when (cappedLevel % 5) {
             1 -> FormationType.GRID
             2 -> FormationType.V_SHAPE
             3 -> FormationType.DIAMOND
@@ -143,7 +160,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
 
         return FormationGenerator.generateFormation(
             type = formationType,
-            level = level,
+            level = cappedLevel,
             screenWidth = screenWidth,
             spacing = spacing,
             startY = 150f
@@ -562,7 +579,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             }
 
             if (nextAliens.isEmpty() && state.aliens.isNotEmpty()) {
-                nextLevel += 1
+                nextLevel = (nextLevel + 1).coerceAtMost(99)
                 nextAliens = createAliens(state.screenWidth, nextLevel).toMutableList()
                 nextFormationX = getInitialFormationX(state.screenWidth, nextLevel)
                 nextMoveDirection = 1f
