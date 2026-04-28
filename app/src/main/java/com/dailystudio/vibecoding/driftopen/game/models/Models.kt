@@ -5,7 +5,11 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 
 enum class GamePhase {
-    START, PLAYING, PAUSED, GAME_OVER, WIN, CHEAT
+    START, PLAYING, PAUSED, GAME_OVER, WIN
+}
+
+enum class GameEvent {
+    OPEN_CHEAT_CONSOLE
 }
 
 enum class CheatType {
@@ -32,9 +36,7 @@ data class GameState(
     val screenShakeIntensity: Float = 0f,
     val phase: GamePhase = GamePhase.START,
     val screenWidth: Float = 0f,
-    val screenHeight: Float = 0f,
-    val cheatCodeInput: String = "",
-    val cheatMessage: String = ""
+    val screenHeight: Float = 0f
 )
 
 data class Explosion(

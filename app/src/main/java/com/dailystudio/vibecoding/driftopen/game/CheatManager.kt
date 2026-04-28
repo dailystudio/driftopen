@@ -5,10 +5,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class CheatManager {
+object CheatManager {
     private var startScreenTapCount = 0
     private val _activatedCheats = MutableStateFlow<Set<CheatType>>(emptySet())
     val activatedCheats = _activatedCheats.asStateFlow()
+
+    private val _selectedLevel = MutableStateFlow<Int?>(null)
+    val selectedLevel = _selectedLevel.asStateFlow()
+
+    fun selectLevel(level: Int) {
+        _selectedLevel.value = level
+        activateCheat(CheatType.LEVEL_SELECT)
+    }
 
     fun onStartScreenTap(): Boolean {
         startScreenTapCount++
@@ -46,5 +54,6 @@ class CheatManager {
     fun resetAll() {
         startScreenTapCount = 0
         _activatedCheats.value = emptySet()
+        _selectedLevel.value = null
     }
 }

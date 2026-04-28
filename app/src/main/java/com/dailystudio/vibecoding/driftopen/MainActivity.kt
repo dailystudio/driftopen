@@ -23,6 +23,10 @@ import com.dailystudio.vibecoding.driftopen.game.SoundManager
 import com.dailystudio.vibecoding.driftopen.game.models.GamePhase
 import com.dailystudio.vibecoding.driftopen.ui.GameScreen
 
+import android.content.Intent
+import com.dailystudio.vibecoding.driftopen.game.models.GameEvent
+import com.dailystudio.vibecoding.driftopen.ui.CheatActivity
+
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,6 +40,16 @@ class MainActivity : ComponentActivity() {
 
             val gameState by engine.gameState.collectAsState()
             val highScore by scoreManager.highScoreFlow.collectAsState(initial = 0)
+
+            LaunchedEffect(engine) {
+                engine.events.collect { event ->
+                    when (event) {
+                        GameEvent.OPEN_CHEAT_CONSOLE -> {
+                            context.startActivity(Intent(context, CheatActivity::class.java))
+                        }
+                    }
+                }
+            }
 
             BackHandler(enabled = gameState.phase == GamePhase.PLAYING) {
                 engine.pauseGame()

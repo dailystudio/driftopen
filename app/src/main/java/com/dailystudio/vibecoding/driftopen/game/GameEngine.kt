@@ -9,14 +9,37 @@ import kotlinx.coroutines.flow.update
 import kotlin.random.Random
 import kotlin.math.*
 
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
+
 class GameEngine(private val soundManager: SoundManager? = null) {
     private val _gameState = MutableStateFlow(GameState())
     val gameState = _gameState.asStateFlow()
 
-    private val cheatManager = CheatManager()
+    private val _events = MutableSharedFlow<GameEvent>()
+    val events = _events.asSharedFlow()
+
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var lastAttackTime = 0L
 
     init {
+        scope.launch {
+            CheatManager.activatedCheats.collect { cheats ->
+                _gameState.update { it.copy(activeCheats = cheats) }
+                
+                // Handle immediate effects of newly activated cheats
+                if (cheats.contains(CheatType.LIVES_99)) {
+                    _gameState.update { it.copy(lives = 99) }
+                }
+            }
+        }
+        scope.launch {
+            CheatManager.selectedLevel.collect { level ->
+                if (level != null) {
+                    _gameState.update { it.copy(level = level) }
+                }
+            }
+        }
     }
 
     private fun getScale(level: Int): Float {
@@ -24,66 +47,12 @@ class GameEngine(private val soundManager: SoundManager? = null) {
     }
 
     fun recordStartScreenTap() {
-        if (cheatManager.onStartScreenTap()) {
-            _gameState.update { it.copy(phase = GamePhase.CHEAT, cheatCodeInput = "", cheatMessage = "ENTER CODE") }
-            cheatManager.resetTaps()
-        }
-    }
-
-    fun handleCheatInput(input: String) {
-        _gameState.update { state ->
-            val newInput = state.cheatCodeInput + input
-            val validation = cheatManager.validateCode(newInput)
-            
-            if (validation != null) {
-                val (cheatType, extra) = validation
-                var nextState = state.copy(
-                    activeCheats = state.activeCheats + cheatType,
-                    cheatCodeInput = "",
-                    cheatMessage = "ACCESS GRANTED"
-                )
-                
-                // Apply immediate effects
-                nextState = when (cheatType) {
-                    CheatType.LIVES_99 -> nextState.copy(lives = 99)
-                    CheatType.LEVEL_SELECT -> {
-                        val newLevel = extra ?: state.level
-                        nextState.copy(level = newLevel)
-                    }
-                    else -> nextState
-                }
-                
-                cheatManager.activateCheat(cheatType)
-                nextState
-            } else {
-                // Specialized feedback for level select attempts
-                val message = when {
-                    // Only show invalid if it's a completed pattern that failed validation
-                    newInput.startsWith("X") && newInput.endsWith("X") && newInput.length > 1 -> {
-                        if (newInput.length == 4) "INVALID LEVEL" else "INVALID CODE"
-                    }
-                    newInput.length >= 5 && newInput.startsWith("X") -> "INVALID CODE"
-                    newInput.length >= 5 -> "INVALID CODE"
-                    else -> "TYPING..."
-                }
-                
-                // If it was an invalid level/code, clear input after showing message
-                if (message != "TYPING...") {
-                    state.copy(cheatCodeInput = "", cheatMessage = message)
-                } else {
-                    val limitedInput = if (newInput.length > 10) newInput.takeLast(10) else newInput
-                    state.copy(cheatCodeInput = limitedInput, cheatMessage = message)
-                }
+        if (CheatManager.onStartScreenTap()) {
+            scope.launch {
+                _events.emit(GameEvent.OPEN_CHEAT_CONSOLE)
             }
+            CheatManager.resetTaps()
         }
-    }
-
-    fun clearCheatInput() {
-        _gameState.update { it.copy(cheatCodeInput = "", cheatMessage = "CLEARED") }
-    }
-
-    fun closeCheatConsole() {
-        _gameState.update { it.copy(phase = GamePhase.START, cheatCodeInput = "", cheatMessage = "") }
     }
 
     fun setHighScore(score: Int) {
@@ -284,8 +253,8 @@ class GameEngine(private val soundManager: SoundManager? = null) {
     }
 
     fun resetToStart() {
-        cheatManager.resetAll()
-        _gameState.update { it.copy(phase = GamePhase.START, activeCheats = emptySet()) }
+        CheatManager.resetAll()
+        _gameState.update { it.copy(phase = GamePhase.START) }
     }
 
     fun pauseGame() {
