@@ -3,16 +3,28 @@ package com.dailystudio.vibecoding.driftopen.game
 import com.dailystudio.vibecoding.driftopen.game.models.*
 import org.junit.Assert.*
 import org.junit.Before
+import org.junit.After
 import org.junit.Test
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 
 class GameEngineTest {
 
     private lateinit var gameEngine: GameEngine
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setup() {
+        Dispatchers.setMain(testDispatcher)
         gameEngine = GameEngine()
         gameEngine.setScreenSize(1000f, 2000f)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
     }
 
     @Test
@@ -96,41 +108,53 @@ class GameEngineTest {
     fun `test game over when lives reach zero`() {
         gameEngine.startGame()
         assertEquals(GamePhase.PLAYING, gameEngine.gameState.value.phase)
-        
-        // Force lives to 1 (if I could, but I'll just simulate hits)
-        // Since I can't easily force state, I'll simulate a collision with an alien multiple times
-        // or just check if it transitions when update logic says so.
-        
-        // To simulate a hit, I'll move ship into an alien.
+
+        // Force lives to 1
+        gameEngine.debugSetLives(1)
+
+        // Move ship into an alien to trigger hit (hitbox is at y)
         val targetAlien = gameEngine.gameState.value.aliens.first()
         val currentShip = gameEngine.gameState.value.ship
-        // VisualRect of ship should overlap with alien
-        // VisualRect is at ship.y - 120f
-        gameEngine.moveShipRelative(targetAlien.x - currentShip.x, (targetAlien.y + 120f) - currentShip.y)
-        
-        // Update until lives are gone
+        gameEngine.moveShipRelative(targetAlien.x - currentShip.x, targetAlien.y - currentShip.y)
+
+        // Update to trigger hit
         repeat(10) {
             gameEngine.update(16000000L)
-            // Need to move it back into collision if it was reset or moved
-            val s = gameEngine.gameState.value
-            if (s.aliens.isNotEmpty()) {
-                val a = s.aliens.first()
-                gameEngine.moveShipRelative(a.x - s.ship.x, (a.y + 120f) - s.ship.y)
-            }
         }
+
+        val state = gameEngine.gameState.value
+        assertEquals(0, state.lives)
+        assertEquals(GamePhase.GAME_OVER, state.phase)
+    }
+
+    @Test
+    fun `test extra life awarded at 10000 points`() {
+        gameEngine.startGame()
+        val initialLives = gameEngine.gameState.value.lives
         
-        // Eventually it should be GAME_OVER if hits were registered
-        // Note: invincibility frames might prevent multiple hits in short time
-        // so we might need to skip frames.
-        repeat(500) {
-            gameEngine.update(16000000L)
-            val s = gameEngine.gameState.value
-            if (s.ship.invincibilityFrames == 0 && s.aliens.isNotEmpty()) {
-                val a = s.aliens.first()
-                gameEngine.moveShipRelative(a.x - s.ship.x, (a.y + 120f) - s.ship.y)
-            }
-        }
+        // Set score to just below 10000
+        gameEngine.debugSetScore(9900)
         
-        assertTrue(gameEngine.gameState.value.lives < 5)
+        // Add 100 points
+        gameEngine.debugAddScore(100)
+        
+        // Score should be 10000 and lives should be initialLives + 1
+        val state = gameEngine.gameState.value
+        assertEquals(10000, state.score)
+        assertEquals(initialLives + 1, state.lives)
+        
+        // Test another 10000 points
+        gameEngine.debugAddScore(10000)
+        
+        val state2 = gameEngine.gameState.value
+        assertEquals(20000, state2.score)
+        assertEquals(initialLives + 2, state2.lives)
+
+        // Verify it doesn't award at 5000 anymore
+        gameEngine.debugSetScore(4900)
+        val livesBefore = gameEngine.gameState.value.lives
+        gameEngine.debugAddScore(200)
+        assertEquals(5100, gameEngine.gameState.value.score)
+        assertEquals(livesBefore, gameEngine.gameState.value.lives)
     }
 }

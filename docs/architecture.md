@@ -64,7 +64,7 @@ To prevent the user's finger from blocking the view of the player ship, the cont
 ### 3.4. Weaponry and Power-Ups
 - When an alien is destroyed, there is a chance to spawn a `PowerUp` entity that falls down the screen.
 - Upon collision with the player, the `GameEngine` sets the `activePowerUp` in the state.
-- The player is awarded an extra life for every 5000 points earned.
+- The player is awarded an extra life for every 10000 points earned.
 - The `shoot()` function uses a `when` expression on the `activePowerUp` type to spawn different bullet combinations (e.g., Spread Shot spawns 3 bullets with different `vx`, Laser creates a high-pierce, elongated bullet).
 
 ### 3.5. Visual Polish

@@ -13,6 +13,10 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 
 class GameEngine(private val soundManager: SoundManager? = null) {
+    companion object {
+        private const val SCORE_PER_EXTRA_LIFE = 10000
+    }
+
     private val _gameState = MutableStateFlow(GameState())
     val gameState = _gameState.asStateFlow()
 
@@ -57,6 +61,25 @@ class GameEngine(private val soundManager: SoundManager? = null) {
 
     fun setHighScore(score: Int) {
         _gameState.update { it.copy(highScore = score) }
+    }
+
+    fun debugSetScore(score: Int) {
+        _gameState.update { it.copy(score = score) }
+    }
+
+    fun debugAddScore(gain: Int) {
+        _gameState.update { state ->
+            val newScoreTotal = state.score + gain
+            val extraLives = (newScoreTotal / SCORE_PER_EXTRA_LIFE) - (state.score / SCORE_PER_EXTRA_LIFE)
+            state.copy(
+                score = newScoreTotal,
+                lives = state.lives + extraLives
+            )
+        }
+    }
+
+    fun debugSetLives(lives: Int) {
+        _gameState.update { it.copy(lives = lives) }
     }
 
     private var lastShootTime = 0L
@@ -591,7 +614,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 if (alien.health <= 0) {
                     soundManager?.playSound("explosion")
                     scoreGain += when(alien.type) {
-                        AlienType.SUPERBOSS -> 5000
+                        AlienType.SUPERBOSS -> 10000
                         AlienType.BOSS -> 500
                         else -> 100
                     }
@@ -611,7 +634,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             val scoreGainFinal = if (isCheated) 0 else scoreGain
             val newScoreTotal = state.score + scoreGainFinal
             if (!isCheated) {
-                newLives += (newScoreTotal / 5000) - (state.score / 5000)
+                newLives += (newScoreTotal / SCORE_PER_EXTRA_LIFE) - (state.score / SCORE_PER_EXTRA_LIFE)
             }
             
             // Powerups collection
