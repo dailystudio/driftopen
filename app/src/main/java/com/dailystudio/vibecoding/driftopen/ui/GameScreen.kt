@@ -84,6 +84,8 @@ fun GameScreen(engine: GameEngine) {
         }
     }
 
+    val formationRenderer = remember { FormationRenderer(::getAlienBitmap) }
+
     LaunchedEffect(Unit) {
         while (true) {
             withFrameNanos { frameTimeNanos ->
@@ -158,8 +160,15 @@ fun GameScreen(engine: GameEngine) {
                 )
             }
 
-            // Draw aliens
-            state.aliens.forEach { alien ->
+            // Draw aliens using FormationRenderer
+            val remainingAliens = formationRenderer.drawFormation(
+                this,
+                state.aliens,
+                state.formationX,
+                150f
+            )
+
+            remainingAliens.forEach { alien ->
                 if (alien.type == AlienType.SUPERBOSS) {
                     // Draw Superboss with high-quality paths as there's only one
                     val skins = GamePaths.alienSkins[alien.skinId] ?: GamePaths.alienSkins["default"]!!
@@ -182,7 +191,7 @@ fun GameScreen(engine: GameEngine) {
                     drawCircle(Color.Black, radius = eyeSize * 0.5f, center = Offset(alien.x - eyeOffset, alien.y - h * 0.2f))
                     drawCircle(Color.Black, radius = eyeSize * 0.5f, center = Offset(alien.x + eyeOffset, alien.y - h * 0.2f))
                 } else {
-                    // Use optimized bitmap for normal aliens
+                    // Use optimized bitmap for settling aliens
                     val bitmap = getAlienBitmap(alien)
                     if (bitmap != null) {
                         drawImage(
@@ -540,5 +549,74 @@ fun GameScreen(engine: GameEngine) {
             }
             GamePhase.PLAYING -> { /* HUD is drawn above */ }
         }
+    }
+}
+
+class FormationRenderer(private val getAlienBitmap: (Alien) -> ImageBitmap?) {
+    private var cachedBitmap: ImageBitmap? = null
+    private var cachedSignature: Any? = null
+    private var minOX = 0f
+    private var minOY = 0f
+
+    fun drawFormation(
+        drawScope: androidx.compose.ui.graphics.drawscope.DrawScope,
+        aliens: List<Alien>,
+        formationX: Float,
+        startY: Float
+    ): List<Alien> {
+        val formationAliens = aliens.filter { !it.isAttacking && it.type != AlienType.SUPERBOSS }
+        val otherAliens = aliens.filter { it.isAttacking || it.type == AlienType.SUPERBOSS }
+        
+        val (settled, settling) = formationAliens.partition {
+            androidx.compose.ui.geometry.Offset(it.x - (formationX + it.offsetX), it.y - (startY + it.offsetY)).getDistance() < 1f
+        }
+
+        if (settled.isNotEmpty()) {
+            val currentSignature = settled.map { it.id to it.health } 
+            
+            if (currentSignature != cachedSignature || cachedBitmap == null) {
+                updateBitmap(settled)
+                cachedSignature = currentSignature
+            }
+
+            cachedBitmap?.let { bitmap ->
+                drawScope.drawImage(
+                    image = bitmap,
+                    topLeft = androidx.compose.ui.geometry.Offset(formationX + minOX, startY + minOY)
+                )
+            }
+        }
+
+        return otherAliens + settling
+    }
+
+    private fun updateBitmap(settled: List<Alien>) {
+        if (settled.isEmpty()) {
+            cachedBitmap = null
+            return
+        }
+
+        minOX = settled.minOf { it.offsetX - it.width / 2 }
+        val maxOX = settled.maxOf { it.offsetX + it.width / 2 }
+        minOY = settled.minOf { it.offsetY - it.height / 2 }
+        val maxOY = settled.maxOf { it.offsetY + it.height / 2 }
+
+        val width = (maxOX - minOX).toInt().coerceAtLeast(1)
+        val height = (maxOY - minOY).toInt().coerceAtLeast(1)
+
+        val bitmap = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.ARGB_8888)
+        val canvas = androidx.compose.ui.graphics.Canvas(bitmap.asImageBitmap())
+        
+        settled.forEach { alien ->
+            val alienBitmap = getAlienBitmap(alien)
+            if (alienBitmap != null) {
+                canvas.drawImage(
+                    alienBitmap,
+                    androidx.compose.ui.geometry.Offset(alien.offsetX - alien.width / 2 - minOX, alien.offsetY - alien.height / 2 - minOY),
+                    androidx.compose.ui.graphics.Paint()
+                )
+            }
+        }
+        cachedBitmap = bitmap.asImageBitmap()
     }
 }

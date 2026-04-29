@@ -523,29 +523,46 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             var nextLevel = state.level
             var nextActivePowerUp = updatedActivePowerUp
 
+            // Spatial bucketing for optimized collision
+            val alienBuckets = mutableMapOf<Int, MutableList<Int>>()
+            nextAliens.forEachIndexed { index, alien ->
+                if (alien.health > 0) {
+                    val bucket = (alien.y / 100f).toInt()
+                    alienBuckets.getOrPut(bucket) { mutableListOf() }.add(index)
+                }
+            }
+
             // Optimized Collision: Bullets vs Aliens
             for (bullet in newBullets) {
                 val bulletRect = bullet.getRect()
                 var hit = false
-                for (i in nextAliens.indices) {
-                    val alien = nextAliens[i]
-                    if (alien.health > 0 && alien.getRect().overlaps(bulletRect)) {
-                        hit = true
-                        if (bullet.type == BulletType.BOMB) {
-                            currentExplosions.add(Explosion(bullet.x, bullet.y, Color.Red, radius = 50f, life = 30))
-                            for (j in nextAliens.indices) {
-                                val a = nextAliens[j]
-                                if (hypot(a.x - bullet.x, a.y - bullet.y) < 150f) {
-                                    nextAliens[j] = a.copy(health = a.health - 5)
+                val bucket = (bullet.y / 100f).toInt()
+                
+                outer@for (b in bucket - 1..bucket + 1) {
+                    val indices = alienBuckets[b] ?: continue
+                    for (i in indices) {
+                        val alien = nextAliens[i]
+                        if (alien.health > 0 && alien.getRect().overlaps(bulletRect)) {
+                            hit = true
+                            if (bullet.type == BulletType.BOMB) {
+                                currentExplosions.add(Explosion(bullet.x, bullet.y, Color.Red, radius = 50f, life = 30))
+                                // AOE Damage optimized
+                                for (eb in bucket - 2..bucket + 2) {
+                                    alienBuckets[eb]?.forEach { j ->
+                                        val a = nextAliens[j]
+                                        if (hypot(a.x - bullet.x, a.y - bullet.y) < 150f) {
+                                            nextAliens[j] = a.copy(health = a.health - 5)
+                                        }
+                                    }
+                                }
+                            } else {
+                                nextAliens[i] = alien.copy(health = alien.health - 1)
+                                if (bullet.type == BulletType.LASER && bullet.pierceCount > 1) {
+                                    finalBullets.add(bullet.copy(pierceCount = bullet.pierceCount - 1))
                                 }
                             }
-                        } else {
-                            nextAliens[i] = alien.copy(health = alien.health - 1)
-                            if (bullet.type == BulletType.LASER && bullet.pierceCount > 1) {
-                                finalBullets.add(bullet.copy(pierceCount = bullet.pierceCount - 1))
-                            }
+                            break@outer
                         }
-                        break
                     }
                 }
                 if (!hit) finalBullets.add(bullet)
@@ -591,7 +608,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 }
             }
 
-            // Player hit detection
+            // Player hit detection optimized
             var finalShip = baseShip
             var finalShake = nextShake
             if (baseShip.invincibilityFrames == 0) {
@@ -601,7 +618,16 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                     playerHit = true
                     updatedAlienBullets = updatedAlienBullets - bulletHit
                 } else {
-                    if (aliveAliens.any { it.getRect().overlaps(shipRect) }) playerHit = true
+                    val shipBucket = (shipRect.center.y / 100f).toInt()
+                    outer@for (sb in shipBucket - 1..shipBucket + 1) {
+                        val indices = alienBuckets[sb] ?: continue
+                        for (i in indices) {
+                            if (nextAliens[i].getRect().overlaps(shipRect)) {
+                                playerHit = true
+                                break@outer
+                            }
+                        }
+                    }
                 }
 
                 if (playerHit) {
