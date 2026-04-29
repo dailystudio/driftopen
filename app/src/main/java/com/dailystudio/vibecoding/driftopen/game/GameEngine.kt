@@ -439,8 +439,21 @@ class GameEngine(private val soundManager: SoundManager? = null) {
 
             // Attack logic
             val nowMillis = System.currentTimeMillis()
-            val attackInterval = (1500L - (state.level / 5) * 200L).coerceAtLeast(600L)
-            val maxConcurrentAttackers = (2 + state.level / 3).coerceAtMost(8)
+            val alienCount = state.aliens.size
+            val baseInterval = (1500L - (state.level / 5) * 200L).coerceAtLeast(600L)
+            
+            // Scale interval based on population: fewer aliens = longer wait between dives
+            val populationMultiplier = when {
+                alienCount <= 1 -> 4.0f
+                alienCount <= 3 -> 2.5f
+                alienCount <= 6 -> 1.5f
+                else -> 1.0f
+            }
+            val attackInterval = (baseInterval * populationMultiplier).toLong()
+            
+            // Scale max attackers: ensure not everyone is diving at once when count is low
+            val baseMaxAttackers = (2 + state.level / 3).coerceAtMost(8)
+            val maxConcurrentAttackers = if (alienCount <= 4) 1 else baseMaxAttackers
 
             if (nowMillis - lastAttackTime > attackInterval && attackersCount < maxConcurrentAttackers) {
                 val candidates = mutableListOf<Int>()
@@ -452,6 +465,10 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 if (candidates.isNotEmpty()) {
                     val index = candidates.random()
                     nextAliens[index] = nextAliens[index].copy(isAttacking = true)
+                    lastAttackTime = nowMillis
+                } else if (attackersCount == 0) {
+                    // If no one is attacking and no one is ready (e.g. they are still returning to formation),
+                    // reset the timer so they don't dive instantly the moment they arrive.
                     lastAttackTime = nowMillis
                 }
             }
