@@ -36,6 +36,9 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 if (cheats.contains(CheatType.LIVES_99)) {
                     _gameState.update { it.copy(lives = 99) }
                 }
+                if (cheats.contains(CheatType.BOMBS_99)) {
+                    _gameState.update { it.copy(bombs = 99) }
+                }
             }
         }
         scope.launch {
@@ -158,7 +161,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 Alien(
                     id = 0,
                     x = screenWidth / 2,
-                    y = 150f,
+                    y = 250f,
                     offsetX = 0f,
                     offsetY = 0f,
                     gridCol = 0,
@@ -189,7 +192,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             level = cappedLevel,
             screenWidth = screenWidth,
             spacing = spacing,
-            startY = 150f
+            startY = 250f
         )
     }
 
@@ -276,11 +279,12 @@ class GameEngine(private val soundManager: SoundManager? = null) {
         _gameState.update { 
             val startLevel = if (it.activeCheats.contains(CheatType.LEVEL_SELECT)) it.level else 1
             val startLives = if (it.activeCheats.contains(CheatType.LIVES_99)) it.lives else 5
+            val startBombs = if (it.activeCheats.contains(CheatType.BOMBS_99)) it.bombs else 1
             val initialX = getInitialFormationX(it.screenWidth, startLevel)
             it.copy(
                 phase = GamePhase.PLAYING,
                 lives = startLives,
-                bombs = 1,
+                bombs = startBombs,
                 score = 0,
                 level = startLevel,
                 formationX = initialX,
@@ -473,7 +477,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                     }
                 } else {
                     val targetX = nextFormationX + alien.offsetX
-                    val targetY = 150f + alien.offsetY
+                    val targetY = 250f + alien.offsetY
                     val dx = targetX - alien.x
                     val dy = targetY - alien.y
                     val newX = if (abs(dx) < 2f) targetX else alien.x + dx * 0.1f
@@ -504,7 +508,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             if (nowMillis - lastAttackTime > attackInterval && attackersCount < maxConcurrentAttackers) {
                 val candidates = mutableListOf<Int>()
                 nextAliens.forEachIndexed { i, a ->
-                    if (a.type != AlienType.SUPERBOSS && !a.isAttacking && a.y >= 150f && nowMillis >= a.readyTime) {
+                    if (a.type != AlienType.SUPERBOSS && !a.isAttacking && a.y >= 250f && nowMillis >= a.readyTime) {
                         candidates.add(i)
                     }
                 }

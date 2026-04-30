@@ -13,7 +13,7 @@ enum class GameEvent {
 }
 
 enum class CheatType {
-    INVINCIBILITY, LIVES_99, LEVEL_SELECT
+    INVINCIBILITY, LIVES_99, BOMBS_99, LEVEL_SELECT
 }
 
 data class GameState(

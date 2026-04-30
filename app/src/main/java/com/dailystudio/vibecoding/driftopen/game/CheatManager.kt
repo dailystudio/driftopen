@@ -26,6 +26,7 @@ object CheatManager {
     fun validateCode(code: String): Pair<CheatType, Int?>? {
         return when {
             code == "7777" -> CheatType.INVINCIBILITY to null
+            code == "8888" -> CheatType.BOMBS_99 to null
             code == "9999" -> CheatType.LIVES_99 to null
             // Level Select: X + 2 digits + X (e.g., X05X)
             code.startsWith("X") && code.endsWith("X") && code.length == 4 -> {

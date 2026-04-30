@@ -359,51 +359,53 @@ fun GameScreen(engine: GameEngine) {
                         color = Color.Yellow,
                         style = MaterialTheme.typography.headlineSmall
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (state.lives <= 5) {
-                            repeat(state.lives) {
+                    Column(horizontalAlignment = Alignment.End) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (state.lives <= 5) {
+                                repeat(state.lives) {
+                                    Icon(
+                                        imageVector = Icons.Default.Favorite,
+                                        contentDescription = null,
+                                        tint = Color.Red,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
+                            } else {
                                 Icon(
                                     imageVector = Icons.Default.Favorite,
                                     contentDescription = null,
                                     tint = Color.Red,
                                     modifier = Modifier.size(32.dp)
                                 )
-                            }
-                        } else {
-                            Icon(
-                                imageVector = Icons.Default.Favorite,
-                                contentDescription = null,
-                                tint = Color.Red,
-                                modifier = Modifier.size(32.dp)
-                            )
-                            Text(
-                                text = " x${state.lives}",
-                                color = Color.Red,
-                                style = MaterialTheme.typography.headlineSmall
-                            )
-                        }
-                    }
-
-                    // Bombs Display
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-                        if (state.bombs <= 5) {
-                            repeat(state.bombs) {
                                 Text(
-                                    text = "💣",
-                                    style = MaterialTheme.typography.headlineSmall,
-                                    modifier = Modifier.padding(end = 4.dp)
+                                    text = " x${state.lives}",
+                                    color = Color.Red,
+                                    style = MaterialTheme.typography.headlineSmall
                                 )
                             }
-                        } else {
-                            Text(
-                                text = "💣",
-                                style = MaterialTheme.typography.headlineSmall
-                            )
-                            Text(
-                                text = " x${state.bombs}",
-                                color = Color.White,
-                                style = MaterialTheme.typography.headlineSmall
-                            )
+                        }
+
+                        // Bombs Display
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                            if (state.bombs <= 5) {
+                                repeat(state.bombs) {
+                                    Text(
+                                        text = "💣",
+                                        style = MaterialTheme.typography.headlineSmall,
+                                        modifier = Modifier.padding(end = 4.dp)
+                                    )
+                                }
+                            } else {
+                                Text(
+                                    text = "💣",
+                                    style = MaterialTheme.typography.headlineSmall
+                                )
+                                Text(
+                                    text = " x${state.bombs}",
+                                    color = Color.White,
+                                    style = MaterialTheme.typography.headlineSmall
+                                )
+                            }
                         }
                     }
                 }
@@ -426,6 +428,7 @@ fun GameScreen(engine: GameEngine) {
                                 val displayName = when(cheat) {
                                     CheatType.INVINCIBILITY -> "INVINCIBILITY"
                                     CheatType.LIVES_99 -> "99 LIVES"
+                                    CheatType.BOMBS_99 -> "99 BOMBS"
                                     CheatType.LEVEL_SELECT -> "LEVEL SELECT"
                                 }
                                 Text(
@@ -510,6 +513,7 @@ fun GameScreen(engine: GameEngine) {
                                 val displayName = when(cheat) {
                                     CheatType.INVINCIBILITY -> "INVINCIBILITY"
                                     CheatType.LIVES_99 -> "99 LIVES"
+                                    CheatType.BOMBS_99 -> "99 BOMBS"
                                     CheatType.LEVEL_SELECT -> "LEVEL SELECT"
                                 }
                                 Text(
