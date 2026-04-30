@@ -63,6 +63,12 @@ class GameEngine(private val soundManager: SoundManager? = null) {
         }
     }
 
+    fun openHelp() {
+        scope.launch {
+            _events.emit(GameEvent.OPEN_HELP)
+        }
+    }
+
     fun setHighScore(score: Int) {
         _gameState.update { it.copy(highScore = score) }
     }

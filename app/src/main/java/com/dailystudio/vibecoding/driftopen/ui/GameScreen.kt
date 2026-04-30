@@ -500,6 +500,13 @@ fun GameScreen(engine: GameEngine) {
                         Button(onClick = { engine.startGame() }) {
                             Text("START GAME")
                         }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { engine.openHelp() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
+                        ) {
+                            Text("HELP", color = Color.White)
+                        }
                     }
 
                     // Bottom-left cheat indicator on title screen

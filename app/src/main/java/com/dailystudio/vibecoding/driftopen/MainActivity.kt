@@ -26,6 +26,7 @@ import com.dailystudio.vibecoding.driftopen.ui.GameScreen
 import android.content.Intent
 import com.dailystudio.vibecoding.driftopen.game.models.GameEvent
 import com.dailystudio.vibecoding.driftopen.ui.CheatActivity
+import com.dailystudio.vibecoding.driftopen.ui.HelpActivity
 
 class MainActivity : ComponentActivity() {
 
@@ -46,6 +47,9 @@ class MainActivity : ComponentActivity() {
                     when (event) {
                         GameEvent.OPEN_CHEAT_CONSOLE -> {
                             context.startActivity(Intent(context, CheatActivity::class.java))
+                        }
+                        GameEvent.OPEN_HELP -> {
+                            context.startActivity(Intent(context, HelpActivity::class.java))
                         }
                     }
                 }
