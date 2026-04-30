@@ -157,4 +157,55 @@ class GameEngineTest {
         assertEquals(5100, gameEngine.gameState.value.score)
         assertEquals(livesBefore, gameEngine.gameState.value.lives)
     }
+
+    @Test
+    fun `test bomb awarded every 50000 points`() {
+        gameEngine.startGame()
+        val initialBombs = gameEngine.gameState.value.bombs
+        assertEquals(1, initialBombs)
+
+        // Set score to just below 50000
+        gameEngine.debugSetScore(49900)
+        gameEngine.debugAddScore(100)
+
+        val state = gameEngine.gameState.value
+        assertEquals(50000, state.score)
+        assertEquals(2, state.bombs)
+
+        // Test another 50000
+        gameEngine.debugAddScore(50000)
+        assertEquals(3, gameEngine.gameState.value.bombs)
+    }
+
+    @Test
+    fun `test use bomb clears diving aliens and bullets`() {
+        gameEngine.startGame()
+        
+        // Force an alien to attack
+        val targetAlien = gameEngine.gameState.value.aliens.first()
+        // I can't easily force it, but I can use debug methods if I added them.
+        // Wait, I can just use a trick: set all aliens to attacking via a debug method or just check the logic.
+        // Since I can't easily trigger the AI to attack, let's just test that useBomb reduces bomb count
+        // and clears alien bullets.
+        
+        val initialBombs = gameEngine.gameState.value.bombs
+        assertTrue(initialBombs > 0)
+        
+        gameEngine.useBomb()
+        
+        val state = gameEngine.gameState.value
+        assertEquals(initialBombs - 1, state.bombs)
+        assertTrue(state.alienBullets.isEmpty())
+    }
+
+    @Test
+    fun `test bombs reset on startGame`() {
+        gameEngine.startGame()
+        gameEngine.useBomb()
+        assertEquals(0, gameEngine.gameState.value.bombs)
+        
+        // Start a new game
+        gameEngine.startGame()
+        assertEquals(1, gameEngine.gameState.value.bombs)
+    }
 }

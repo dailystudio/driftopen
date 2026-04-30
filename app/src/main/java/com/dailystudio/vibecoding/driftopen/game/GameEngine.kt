@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.*
 class GameEngine(private val soundManager: SoundManager? = null) {
     companion object {
         private const val SCORE_PER_EXTRA_LIFE = 10000
+        private const val SCORE_PER_BOMB = 50000
     }
 
     private val _gameState = MutableStateFlow(GameState())
@@ -71,9 +72,11 @@ class GameEngine(private val soundManager: SoundManager? = null) {
         _gameState.update { state ->
             val newScoreTotal = state.score + gain
             val extraLives = (newScoreTotal / SCORE_PER_EXTRA_LIFE) - (state.score / SCORE_PER_EXTRA_LIFE)
+            val extraBombs = (newScoreTotal / SCORE_PER_BOMB) - (state.score / SCORE_PER_BOMB)
             state.copy(
                 score = newScoreTotal,
-                lives = state.lives + extraLives
+                lives = state.lives + extraLives,
+                bombs = state.bombs + extraBombs
             )
         }
     }
@@ -251,6 +254,24 @@ class GameEngine(private val soundManager: SoundManager? = null) {
         }
     }
 
+    fun useBomb() {
+        if (_gameState.value.bombs <= 0 || _gameState.value.phase != GamePhase.PLAYING) return
+
+        _gameState.update { state ->
+            val nextAliens = state.aliens.map { 
+                if (it.isAttacking) it.copy(health = 0) else it 
+            }
+            state.copy(
+                bombs = state.bombs - 1,
+                aliens = nextAliens,
+                alienBullets = emptyList(),
+                screenShakeIntensity = 25f,
+                bombEffectFrames = 40
+            )
+        }
+        soundManager?.playSound("explosion")
+    }
+
     fun startGame() {
         _gameState.update { 
             val startLevel = if (it.activeCheats.contains(CheatType.LEVEL_SELECT)) it.level else 1
@@ -259,6 +280,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             it.copy(
                 phase = GamePhase.PLAYING,
                 lives = startLives,
+                bombs = 1,
                 score = 0,
                 level = startLevel,
                 formationX = initialX,
@@ -309,6 +331,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
         _gameState.update { state ->
             // Decay screen shake
             val nextShake = if (state.screenShakeIntensity > 0.1f) state.screenShakeIntensity * 0.9f else 0f
+            val nextBombEffectFrames = if (state.bombEffectFrames > 0) state.bombEffectFrames - 1 else 0
 
             // Update PowerUp timer
             val updatedActivePowerUp = state.activePowerUp?.let {
@@ -559,6 +582,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             val currentPowerUps = newPowerUps.toMutableList()
             var scoreGain = 0
             var newLives = state.lives
+            var newBombs = state.bombs
             var nextPhase = state.phase
             var nextLevel = state.level
             var nextActivePowerUp = updatedActivePowerUp
@@ -635,8 +659,8 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             val newScoreTotal = state.score + scoreGainFinal
             if (!isCheated) {
                 newLives += (newScoreTotal / SCORE_PER_EXTRA_LIFE) - (state.score / SCORE_PER_EXTRA_LIFE)
+                newBombs += (newScoreTotal / SCORE_PER_BOMB) - (state.score / SCORE_PER_BOMB)
             }
-            
             // Powerups collection
             val remainingPowerUps = mutableListOf<PowerUp>()
             for (pu in currentPowerUps) {
@@ -711,11 +735,13 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                 activePowerUp = nextActivePowerUp,
                 score = newScoreTotal,
                 lives = newLives,
+                bombs = newBombs,
                 level = nextLevel,
                 formationX = nextFormationX,
                 alienMoveDirection = nextMoveDirection,
                 superbossDirection = nextSuperbossDirection,
                 screenShakeIntensity = finalShake,
+                bombEffectFrames = nextBombEffectFrames,
                 phase = nextPhase
             )
             

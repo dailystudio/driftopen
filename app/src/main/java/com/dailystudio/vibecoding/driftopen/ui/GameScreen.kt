@@ -106,9 +106,10 @@ fun GameScreen(engine: GameEngine) {
                     }
                 }
                 .pointerInput(Unit) {
-                    detectTapGestures {
-                        engine.shoot()
-                    }
+                    detectTapGestures(
+                        onDoubleTap = { engine.useBomb() },
+                        onTap = { engine.shoot() }
+                    )
                 }
         ) {
             val scaleFactor = size.width / BASE_WIDTH
@@ -305,6 +306,28 @@ fun GameScreen(engine: GameEngine) {
                 )
             }
 
+            // Draw bomb effect (Hybrid: Flash + Shockwave)
+            if (state.bombEffectFrames > 0) {
+                val progress = (40f - state.bombEffectFrames) / 40f
+
+                // 1. Full screen flash (Intense at start, fades quickly)
+                val flashAlpha = (if (progress < 0.2f) 0.8f else (1f - progress) * 0.5f).coerceIn(0f, 1f)
+                drawRect(
+                    color = Color.White.copy(alpha = flashAlpha),
+                    size = Size(BASE_WIDTH, size.height / scaleFactor)
+                )
+
+                // 2. Expanding shockwave ring from ship
+                val waveRadius = progress * BASE_WIDTH * 1.5f
+                val waveAlpha = (1f - progress).coerceAtLeast(0f)
+                drawCircle(
+                    color = Color.Cyan.copy(alpha = waveAlpha),
+                    radius = waveRadius,
+                    center = Offset(state.ship.x, state.ship.y - 120f),
+                    style = Stroke(width = 20f * (1f - progress) + 4f)
+                )
+            }
+
             drawContext.canvas.restore()
         }
 
@@ -356,6 +379,29 @@ fun GameScreen(engine: GameEngine) {
                             Text(
                                 text = " x${state.lives}",
                                 color = Color.Red,
+                                style = MaterialTheme.typography.headlineSmall
+                            )
+                        }
+                    }
+
+                    // Bombs Display
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                        if (state.bombs <= 5) {
+                            repeat(state.bombs) {
+                                Text(
+                                    text = "💣",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    modifier = Modifier.padding(end = 4.dp)
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = "💣",
+                                style = MaterialTheme.typography.headlineSmall
+                            )
+                            Text(
+                                text = " x${state.bombs}",
+                                color = Color.White,
                                 style = MaterialTheme.typography.headlineSmall
                             )
                         }

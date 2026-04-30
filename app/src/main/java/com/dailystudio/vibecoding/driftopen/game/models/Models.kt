@@ -29,11 +29,13 @@ data class GameState(
     val score: Int = 0,
     val highScore: Int = 0,
     val lives: Int = 5,
+    val bombs: Int = 1,
     val level: Int = 1,
     val formationX: Float = 0f,
     val alienMoveDirection: Float = 1f,
     val superbossDirection: Float = 1f,
     val screenShakeIntensity: Float = 0f,
+    val bombEffectFrames: Int = 0,
     val phase: GamePhase = GamePhase.START,
     val screenWidth: Float = 0f,
     val screenHeight: Float = 0f
