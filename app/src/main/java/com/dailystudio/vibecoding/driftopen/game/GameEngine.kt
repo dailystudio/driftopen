@@ -154,7 +154,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
         if (cappedLevel % 5 == 0) {
             // Superboss level
             val health = 30 + cappedLevel * 2
-            val skinId = "superboss_${Random.nextInt(10)}"
+            val skinId = "superboss_${(cappedLevel / 5) % 11}"
             val patternId = Random.nextInt(5)
 
             return listOf(

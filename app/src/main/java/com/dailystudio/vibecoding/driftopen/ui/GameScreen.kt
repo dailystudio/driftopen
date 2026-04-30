@@ -166,7 +166,7 @@ fun GameScreen(engine: GameEngine) {
                 this,
                 state.aliens,
                 state.formationX,
-                150f
+                250f
             )
 
             remainingAliens.forEach { alien ->
