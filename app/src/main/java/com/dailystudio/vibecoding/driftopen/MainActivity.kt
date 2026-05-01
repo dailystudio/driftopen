@@ -19,6 +19,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.dailystudio.vibecoding.driftopen.game.GameEngine
 import com.dailystudio.vibecoding.driftopen.game.ScoreManager
+import com.dailystudio.vibecoding.driftopen.game.CollectionManager
 import com.dailystudio.vibecoding.driftopen.game.SoundManager
 import com.dailystudio.vibecoding.driftopen.game.models.GamePhase
 import com.dailystudio.vibecoding.driftopen.ui.GameScreen
@@ -38,6 +39,7 @@ class MainActivity : ComponentActivity() {
             val lifecycleOwner = LocalLifecycleOwner.current
             val soundManager = remember { SoundManager(context) }
             val scoreManager = remember { ScoreManager(context) }
+            val collectionManager = remember { CollectionManager(context) }
             val engine = remember { GameEngine(soundManager) }
 
             val gameState by engine.gameState.collectAsState()
@@ -72,6 +74,14 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(gameState.phase, gameState.score) {
                 if (gameState.phase == GamePhase.GAME_OVER || gameState.phase == GamePhase.WIN) {
                     scoreManager.saveHighScore(gameState.score)
+                }
+            }
+
+            // Unlock aliens when met
+            LaunchedEffect(gameState.aliens) {
+                if (gameState.aliens.isNotEmpty()) {
+                    val skinIds = gameState.aliens.map { it.skinId }.toSet()
+                    collectionManager.unlockAliens(skinIds)
                 }
             }
 

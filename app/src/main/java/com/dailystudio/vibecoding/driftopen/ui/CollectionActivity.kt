@@ -22,6 +22,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import com.dailystudio.vibecoding.driftopen.game.CollectionManager
 import com.dailystudio.vibecoding.driftopen.game.models.AlienType
 
 data class AlienEntry(
@@ -83,6 +88,10 @@ class CollectionActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
+            val context = LocalContext.current
+            val collectionManager = remember { CollectionManager(context) }
+            val unlockedAliens by collectionManager.unlockedAliensFlow.collectAsState(initial = setOf("default"))
+
             MaterialTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -90,6 +99,7 @@ class CollectionActivity : ComponentActivity() {
                 ) {
                     CollectionScreen(
                         collection = alienCollection,
+                        unlockedAliens = unlockedAliens,
                         onExit = { finish() }
                     )
                 }
@@ -99,7 +109,11 @@ class CollectionActivity : ComponentActivity() {
 }
 
 @Composable
-fun CollectionScreen(collection: List<AlienEntry>, onExit: () -> Unit) {
+fun CollectionScreen(
+    collection: List<AlienEntry>,
+    unlockedAliens: Set<String>,
+    onExit: () -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -133,7 +147,8 @@ fun CollectionScreen(collection: List<AlienEntry>, onExit: () -> Unit) {
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
             items(collection) { alien ->
-                AlienCollectionItem(alien)
+                val isUnlocked = unlockedAliens.contains(alien.skinId)
+                AlienCollectionItem(alien, isUnlocked)
             }
         }
         
@@ -156,13 +171,18 @@ fun CollectionScreen(collection: List<AlienEntry>, onExit: () -> Unit) {
 }
 
 @Composable
-fun AlienCollectionItem(alien: AlienEntry) {
+fun AlienCollectionItem(alien: AlienEntry, isUnlocked: Boolean) {
+    val displayColor = if (isUnlocked) alien.color else Color.Gray
+    val displayName = if (isUnlocked) alien.name else "???"
+    val displayDesc = if (isUnlocked) alien.description else "Intelligence indicates a hostile entity of unknown origin detected in this sector. Proceed with caution to gather tactical data."
+    val displayClassification = if (isUnlocked) alien.type.name else "UNKNOWN"
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, alien.color.copy(alpha = 0.5f))
+        colors = CardDefaults.cardColors(containerColor = if (isUnlocked) Color(0xFF1A1A1A) else Color(0xFF0D0D0D)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, displayColor.copy(alpha = 0.5f))
     ) {
         Row(
             modifier = Modifier
@@ -175,36 +195,45 @@ fun AlienCollectionItem(alien: AlienEntry) {
                 modifier = Modifier
                     .size(80.dp)
                     .background(Color.Black, MaterialTheme.shapes.small)
-                    .border(1.dp, Color.Gray, MaterialTheme.shapes.small),
+                    .border(1.dp, if (isUnlocked) Color.Gray else Color.DarkGray, MaterialTheme.shapes.small),
                 contentAlignment = Alignment.Center
             ) {
-                CollectionRetroGraphic(
-                    type = alien.type,
-                    skinId = alien.skinId,
-                    color = alien.color,
-                    modifier = Modifier.size(60.dp)
-                )
+                if (isUnlocked) {
+                    CollectionRetroGraphic(
+                        type = alien.type,
+                        skinId = alien.skinId,
+                        color = alien.color,
+                        modifier = Modifier.size(60.dp)
+                    )
+                } else {
+                    Text(
+                        text = "?",
+                        color = Color.DarkGray,
+                        fontSize = 40.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.width(16.dp))
             
             Column {
                 Text(
-                    text = alien.name,
-                    color = alien.color,
+                    text = displayName,
+                    color = displayColor,
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "Classification: ${alien.type.name}",
+                    text = "Classification: $displayClassification",
                     color = Color.Gray,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = alien.description,
-                    color = Color.White,
+                    text = displayDesc,
+                    color = if (isUnlocked) Color.White else Color.DarkGray,
                     fontSize = 14.sp,
                     lineHeight = 18.sp
                 )
