@@ -502,6 +502,13 @@ fun GameScreen(engine: GameEngine) {
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(
+                            onClick = { engine.openCollection() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4B0082))
+                        ) {
+                            Text("COLLECTION", color = Color.White)
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
                             onClick = { engine.openHelp() },
                             colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray)
                         ) {

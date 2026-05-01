@@ -107,11 +107,14 @@ object FormationGenerator {
         row: Int,
         type: AlienType,
         color: Color,
-        scale: Float
+        scale: Float,
+        level: Int
     ): Alien {
         val health = if (type == AlienType.BOSS) 3 else 1
         val skinId = if (type == AlienType.BOSS) {
-            listOf("default", "boss_a", "boss_b").random()
+            val maxBossIndex = ((level - 1) / 10).coerceIn(0, 9)
+            val chosenIndex = Random.nextInt(maxBossIndex + 1)
+            "boss_$chosenIndex"
         } else "default"
         val patternId = if (type == AlienType.BOSS) {
             Random.nextInt(3) // 0: single, 1: circular, 2: burst
@@ -150,7 +153,7 @@ object FormationGenerator {
                 val (type, color) = getAlienProperties(row, col, level)
                 val ox = col * spacing
                 val oy = row * spacing
-                aliens.add(createAlien(idCounter++, formationX + ox, startY + oy, ox, oy, col, row, type, color, scale))
+                aliens.add(createAlien(idCounter++, formationX + ox, startY + oy, ox, oy, col, row, type, color, scale, level))
             }
         }
         return aliens
@@ -168,7 +171,7 @@ object FormationGenerator {
                 val (type, color) = getAlienProperties(row, col, level)
                 val ox = col * spacing
                 val oy = row * spacing
-                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, col, row, type, color, scale))
+                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, col, row, type, color, scale, level))
             }
         }
         return aliens
@@ -188,7 +191,7 @@ object FormationGenerator {
                 val (type, color) = getAlienProperties(absRow + size, col, level)
                 val ox = col * spacing
                 val oy = (row + size) * spacing
-                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, col, row + size, type, color, scale))
+                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, col, row + size, type, color, scale, level))
             }
         }
         return aliens
@@ -206,7 +209,7 @@ object FormationGenerator {
             val radius = ring * spacing
             if (radius == 0f) {
                 val (type, color) = getAlienProperties(0, 0, level)
-                aliens.add(createAlien(idCounter++, centerX, startY + maxRadius, 0f, maxRadius, 0, 0, type, color, scale))
+                aliens.add(createAlien(idCounter++, centerX, startY + maxRadius, 0f, maxRadius, 0, 0, type, color, scale, level))
                 continue
             }
             
@@ -217,7 +220,7 @@ object FormationGenerator {
                 val ox = radius * cos(angle).toFloat()
                 val oy = maxRadius + radius * sin(angle).toFloat()
                 val (type, color) = getAlienProperties(ring, i, level)
-                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, i, ring, type, color, scale))
+                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, i, ring, type, color, scale, level))
             }
         }
         return aliens
@@ -243,12 +246,12 @@ object FormationGenerator {
                 val ox = hx.toFloat() * ringScale
                 val oy = verticalOffset + hy.toFloat() * ringScale
                 val (type, color) = getAlienProperties(ring, i, level)
-                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, i, ring, type, color, scale))
+                aliens.add(createAlien(idCounter++, centerX + ox, startY + oy, ox, oy, i, ring, type, color, scale, level))
             }
         }
         // Center alien
         val (type, color) = getAlienProperties(0, 0, level)
-        aliens.add(createAlien(idCounter++, centerX, startY + verticalOffset, 0f, verticalOffset, 0, 0, type, color, scale))
+        aliens.add(createAlien(idCounter++, centerX, startY + verticalOffset, 0f, verticalOffset, 0, 0, type, color, scale, level))
         
         return aliens
     }
@@ -265,7 +268,7 @@ object FormationGenerator {
             val (type, color) = getAlienProperties(i, 0, level)
             // For scatter, we still want them to move with formationX, so we calculate offset from center
             val ox = rx - centerX
-            aliens.add(createAlien(idCounter++, rx, startY + ry, ox, ry, i, 0, type, color, scale))
+            aliens.add(createAlien(idCounter++, rx, startY + ry, ox, ry, i, 0, type, color, scale, level))
         }
         return aliens
     }

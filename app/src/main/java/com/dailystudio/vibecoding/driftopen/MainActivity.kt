@@ -27,6 +27,7 @@ import android.content.Intent
 import com.dailystudio.vibecoding.driftopen.game.models.GameEvent
 import com.dailystudio.vibecoding.driftopen.ui.CheatActivity
 import com.dailystudio.vibecoding.driftopen.ui.HelpActivity
+import com.dailystudio.vibecoding.driftopen.ui.CollectionActivity
 
 class MainActivity : ComponentActivity() {
 
@@ -50,6 +51,9 @@ class MainActivity : ComponentActivity() {
                         }
                         GameEvent.OPEN_HELP -> {
                             context.startActivity(Intent(context, HelpActivity::class.java))
+                        }
+                        GameEvent.OPEN_COLLECTION -> {
+                            context.startActivity(Intent(context, CollectionActivity::class.java))
                         }
                     }
                 }

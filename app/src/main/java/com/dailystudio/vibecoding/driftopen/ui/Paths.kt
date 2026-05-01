@@ -63,39 +63,154 @@ object GamePaths {
                 moveTo(-0.5f, 0f); lineTo(-1.0f, -0.5f); lineTo(-0.5f, 0.1f); moveTo(0.5f, 0f); lineTo(1.0f, -0.5f); lineTo(0.5f, 0.1f)
             }
         ),
-        "boss_a" to mapOf(
+        "boss_0" to mapOf(
             AlienType.BOSS to Path().apply {
-                // Spiky boss
-                moveTo(0f, -0.7f)
-                lineTo(0.2f, -0.2f); lineTo(0.7f, -0.2f); lineTo(0.3f, 0.1f); lineTo(0.5f, 0.6f)
-                lineTo(0f, 0.3f); lineTo(-0.5f, 0.6f); lineTo(-0.3f, 0.1f); lineTo(-0.7f, -0.2f)
-                lineTo(-0.2f, -0.2f); close()
+                addOval(androidx.compose.ui.geometry.Rect(-0.5f, -0.3f, 0.5f, 0.3f)); moveTo(-0.5f, 0f); lineTo(-0.8f, -0.4f); moveTo(0.5f, 0f); lineTo(0.8f, -0.4f)
             }
         ),
-        "boss_b" to mapOf(
+        "boss_1" to mapOf(
             AlienType.BOSS to Path().apply {
-                // Shield-like boss
-                moveTo(-0.5f, -0.5f); lineTo(0.5f, -0.5f); lineTo(0.5f, 0.2f); lineTo(0f, 0.7f); lineTo(-0.5f, 0.2f); close()
-                moveTo(-0.2f, -0.5f); lineTo(-0.2f, -0.7f); lineTo(0.2f, -0.7f); lineTo(0.2f, -0.5f)
+                addRect(androidx.compose.ui.geometry.Rect(-0.4f, 0f, 0.4f, 0.4f)); addRect(androidx.compose.ui.geometry.Rect(0.2f, -0.4f, 0.4f, 0f))
+            }
+        ),
+        "boss_2" to mapOf(
+            AlienType.BOSS to Path().apply {
+                addRect(androidx.compose.ui.geometry.Rect(-0.3f, -0.5f, 0.3f, 0.5f)); moveTo(0.3f, 0f); lineTo(0.7f, -0.6f)
+            }
+        ),
+        "boss_3" to mapOf(
+            AlienType.BOSS to Path().apply {
+                moveTo(0f, -0.6f); lineTo(0f, 0.6f); moveTo(-0.4f, -0.4f); lineTo(0f, -0.2f); lineTo(0f, -0.6f); close(); moveTo(0.4f, -0.4f); lineTo(0f, -0.2f); lineTo(0f, -0.6f); close()
+            }
+        ),
+        "boss_4" to mapOf(
+            AlienType.BOSS to Path().apply {
+                moveTo(0f, -0.6f); lineTo(-0.5f, 0.5f); lineTo(0.5f, 0.5f); close()
+            }
+        ),
+        "boss_5" to mapOf(
+            AlienType.BOSS to Path().apply {
+                addRect(androidx.compose.ui.geometry.Rect(-0.2f, -0.4f, 0.2f, 0.4f)); addOval(androidx.compose.ui.geometry.Rect(-0.6f, -0.2f, -0.2f, 0.2f)); addOval(androidx.compose.ui.geometry.Rect(0.2f, -0.2f, 0.6f, 0.2f))
+            }
+        ),
+        "boss_6" to mapOf(
+            AlienType.BOSS to Path().apply {
+                moveTo(0f, 0.6f); lineTo(0f, -0.4f); moveTo(-0.5f, -0.4f); lineTo(0.5f, -0.4f); lineTo(0f, -0.2f); close()
+            }
+        ),
+        "boss_7" to mapOf(
+            AlienType.BOSS to Path().apply {
+                addOval(androidx.compose.ui.geometry.Rect(-0.5f, -0.5f, 0f, 0.5f)); addOval(androidx.compose.ui.geometry.Rect(0f, -0.5f, 0.5f, 0.5f))
+            }
+        ),
+        "boss_8" to mapOf(
+            AlienType.BOSS to Path().apply {
+                addOval(androidx.compose.ui.geometry.Rect(-0.6f, -0.3f, -0.1f, 0.3f)); addOval(androidx.compose.ui.geometry.Rect(0.1f, -0.3f, 0.6f, 0.3f))
+            }
+        ),
+        "boss_9" to mapOf(
+            AlienType.BOSS to Path().apply {
+                moveTo(0f, -0.4f); lineTo(-0.6f, 0.2f); lineTo(-0.2f, 0.4f); lineTo(0f, 0.8f); lineTo(0.2f, 0.4f); lineTo(0.6f, 0.2f); close()
+            }
+        ),
+        "superboss_0" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addOval(androidx.compose.ui.geometry.Rect(-0.6f, -0.6f, 0.6f, 0.6f)); moveTo(-0.8f, -0.2f); lineTo(-0.5f, 0f); moveTo(0.8f, -0.2f); lineTo(0.5f, 0f)
+            }
+        ),
+        "superboss_1" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                moveTo(0f, 0.8f); lineTo(0f, 0f); moveTo(0f, 0f); lineTo(-0.6f, -0.6f); moveTo(0f, 0f); lineTo(-0.2f, -0.8f); moveTo(0f, 0f); lineTo(0.2f, -0.8f); moveTo(0f, 0f); lineTo(0.6f, -0.6f)
+            }
+        ),
+        "superboss_2" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addOval(androidx.compose.ui.geometry.Rect(-0.7f, -0.4f, 0.7f, 0.4f)); moveTo(-0.7f, 0f); lineTo(-0.9f, -0.5f); moveTo(0.7f, 0f); lineTo(0.9f, -0.5f)
+            }
+        ),
+        "superboss_3" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addRect(androidx.compose.ui.geometry.Rect(-0.2f, -0.5f, 0.2f, 0.5f)); moveTo(-0.2f, -0.5f); lineTo(-0.6f, -0.8f); moveTo(0.2f, -0.5f); lineTo(0.6f, -0.8f)
+            }
+        ),
+        "superboss_4" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                moveTo(0f, -0.8f); lineTo(-0.9f, 0.2f); lineTo(-0.3f, 0.2f); lineTo(0f, 0.8f); lineTo(0.3f, 0.2f); lineTo(0.9f, 0.2f); close()
+            }
+        ),
+        "superboss_5" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addRect(androidx.compose.ui.geometry.Rect(-0.4f, -0.4f, 0.4f, 0.4f)); moveTo(-0.4f, -0.4f); lineTo(-0.8f, -0.8f); moveTo(0.4f, -0.4f); lineTo(0.8f, -0.8f)
+            }
+        ),
+        "superboss_6" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addRect(androidx.compose.ui.geometry.Rect(-0.8f, -0.2f, -0.4f, 0.6f)); addRect(androidx.compose.ui.geometry.Rect(-0.2f, -0.2f, 0.2f, 0.6f)); addRect(androidx.compose.ui.geometry.Rect(0.4f, -0.2f, 0.8f, 0.6f))
+            }
+        ),
+        "superboss_7" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addOval(androidx.compose.ui.geometry.Rect(-0.3f, -0.3f, 0.3f, 0.3f)); moveTo(-0.8f, -0.8f); lineTo(0.8f, 0.8f); moveTo(-0.8f, 0.8f); lineTo(0.8f, -0.8f)
+            }
+        ),
+        "superboss_8" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addRect(androidx.compose.ui.geometry.Rect(-0.7f, -0.5f, -0.3f, 0.5f)); addRect(androidx.compose.ui.geometry.Rect(-0.2f, -0.5f, 0.2f, 0.5f)); addRect(androidx.compose.ui.geometry.Rect(0.3f, -0.5f, 0.7f, 0.5f))
             }
         ),
         "superboss_9" to mapOf(
             AlienType.SUPERBOSS to Path().apply {
-                // Hammerhead
-                moveTo(-0.8f, -0.5f); lineTo(0.8f, -0.5f); lineTo(0.8f, -0.2f); lineTo(0.2f, 0f); lineTo(0.2f, 0.6f); lineTo(-0.2f, 0.6f); lineTo(-0.2f, 0f); lineTo(-0.8f, -0.2f); close()
+                moveTo(0f, 0.8f); lineTo(-0.6f, 0.4f); lineTo(0.6f, 0f); lineTo(-0.6f, -0.4f); lineTo(0.4f, -0.8f)
             }
         ),
         "superboss_10" to mapOf(
             AlienType.SUPERBOSS to Path().apply {
-                // Icon-based superboss (Hexagon + Circle + Antennae)
-                // Viewport 200x200, centered at 100,100. Scaled to +/- 0.8
-                // Hexagon
-                moveTo(-0.46f, -0.78f); lineTo(0.46f, -0.78f); lineTo(0.92f, 0f); lineTo(0.46f, 0.78f); lineTo(-0.46f, 0.78f); lineTo(-0.92f, 0f); close()
-                // Circle (Eye)
-                addOval(androidx.compose.ui.geometry.Rect(-0.3f, -0.3f, 0.3f, 0.3f))
-                // Antennae
-                moveTo(-0.46f, -0.78f); lineTo(-1.2f, -1.1f)
-                moveTo(0.46f, -0.78f); lineTo(1.2f, -1.1f)
+                addOval(androidx.compose.ui.geometry.Rect(-0.8f, -0.6f, -0.2f, 0f)); addOval(androidx.compose.ui.geometry.Rect(-0.3f, -0.8f, 0.3f, -0.2f)); addOval(androidx.compose.ui.geometry.Rect(0.2f, -0.6f, 0.8f, 0f))
+            }
+        ),
+        "superboss_11" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addRect(androidx.compose.ui.geometry.Rect(-0.5f, 0f, 0.5f, 0.8f)); addRect(androidx.compose.ui.geometry.Rect(-0.8f, 0.6f, -0.5f, 0.8f)); addRect(androidx.compose.ui.geometry.Rect(0.5f, 0.6f, 0.8f, 0.8f))
+            }
+        ),
+        "superboss_12" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                moveTo(-0.8f, 0.5f); lineTo(0f, -0.8f); lineTo(0.6f, -0.2f); lineTo(0.2f, 0.8f); close()
+            }
+        ),
+        "superboss_13" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                moveTo(0f, 0.5f); lineTo(-0.9f, -0.5f); lineTo(-0.3f, -0.7f); lineTo(0f, -0.9f); lineTo(0.3f, -0.7f); lineTo(0.9f, -0.5f); close()
+            }
+        ),
+        "superboss_14" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addOval(androidx.compose.ui.geometry.Rect(-0.8f, -0.4f, 0.6f, 0.4f)); moveTo(0.6f, 0f); lineTo(0.9f, -0.4f); lineTo(0.9f, 0.4f); close()
+            }
+        ),
+        "superboss_15" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addOval(androidx.compose.ui.geometry.Rect(-0.5f, -0.5f, 0.5f, 0.5f)); moveTo(-0.5f, 0f); lineTo(-0.9f, -0.2f); moveTo(-0.5f, 0.2f); lineTo(-0.9f, 0.4f); moveTo(0.5f, 0f); lineTo(0.9f, -0.2f); moveTo(0.5f, 0.2f); lineTo(0.9f, 0.4f)
+            }
+        ),
+        "superboss_16" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addRect(androidx.compose.ui.geometry.Rect(-0.6f, -0.8f, 0.6f, 0.8f))
+            }
+        ),
+        "superboss_17" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                moveTo(0f, -0.9f); lineTo(-0.5f, 0.9f); lineTo(0.5f, 0.9f); close(); moveTo(-0.8f, -0.2f); lineTo(0.8f, -0.2f)
+            }
+        ),
+        "superboss_18" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addOval(androidx.compose.ui.geometry.Rect(-0.6f, -0.5f, -0.1f, 0.1f)); addOval(androidx.compose.ui.geometry.Rect(0.1f, -0.5f, 0.6f, 0.1f)); addRect(androidx.compose.ui.geometry.Rect(-0.4f, 0.1f, 0.4f, 0.7f))
+            }
+        ),
+        "superboss_19" to mapOf(
+            AlienType.SUPERBOSS to Path().apply {
+                addRect(androidx.compose.ui.geometry.Rect(-0.3f, -0.8f, 0.3f, 0f)); moveTo(0f, 0f); lineTo(0.6f, 0.4f); lineTo(-0.6f, 0.8f)
             }
         )
     )

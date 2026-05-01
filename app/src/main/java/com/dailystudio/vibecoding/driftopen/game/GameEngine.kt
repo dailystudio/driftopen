@@ -69,6 +69,12 @@ class GameEngine(private val soundManager: SoundManager? = null) {
         }
     }
 
+    fun openCollection() {
+        scope.launch {
+            _events.emit(GameEvent.OPEN_COLLECTION)
+        }
+    }
+
     fun setHighScore(score: Int) {
         _gameState.update { it.copy(highScore = score) }
     }
@@ -156,11 +162,12 @@ class GameEngine(private val soundManager: SoundManager? = null) {
     }
 
     private fun createAliens(screenWidth: Float, level: Int): List<Alien> {
-        val cappedLevel = level.coerceIn(1, 99)
+        val cappedLevel = level.coerceIn(1, 100)
         if (cappedLevel % 5 == 0) {
             // Superboss level
             val health = 30 + cappedLevel * 2
-            val skinId = "superboss_${(cappedLevel / 5) % 11}"
+            val superbossIndex = ((cappedLevel - 1) / 5).coerceIn(0, 19)
+            val skinId = "superboss_$superbossIndex"
             val patternId = Random.nextInt(5)
 
             return listOf(

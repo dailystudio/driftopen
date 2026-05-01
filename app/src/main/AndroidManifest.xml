@@ -28,6 +28,11 @@
             android:name=".ui.HelpActivity"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.DriftOpen" />
+
+        <activity
+            android:name=".ui.CollectionActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/Theme.DriftOpen" />
     </application>
 
 </manifest>

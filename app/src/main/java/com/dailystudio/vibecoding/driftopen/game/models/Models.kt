@@ -10,7 +10,8 @@ enum class GamePhase {
 
 enum class GameEvent {
     OPEN_CHEAT_CONSOLE,
-    OPEN_HELP
+    OPEN_HELP,
+    OPEN_COLLECTION
 }
 
 enum class CheatType {
