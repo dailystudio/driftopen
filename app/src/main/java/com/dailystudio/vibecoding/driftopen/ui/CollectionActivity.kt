@@ -42,11 +42,11 @@ class CollectionActivity : ComponentActivity() {
     private val alienCollection = listOf(
         // Basic Units
         AlienEntry(
-            AlienType.NORMAL, "default", "Zyrion Drone", Color.Red,
+            AlienType.NORMAL, "normal", "Zyrion Drone", Color.Red,
             "The backbone of the DriftOpen fleet. These mass-produced drones overwhelm planetary defenses through relentless swarming tactics and sheer numbers."
         ),
         AlienEntry(
-            AlienType.FAST, "default", "Solar Dart", Color.Yellow,
+            AlienType.FAST, "fast", "Solar Dart", Color.Yellow,
             "Elite interceptors built for speed. Their diamond hulls allow them to perform extreme maneuvers, making them the most elusive targets in the fleet."
         ),
 
@@ -90,7 +90,7 @@ class CollectionActivity : ComponentActivity() {
         setContent {
             val context = LocalContext.current
             val collectionManager = remember { CollectionManager(context) }
-            val unlockedAliens by collectionManager.unlockedAliensFlow.collectAsState(initial = setOf("default"))
+            val unlockedAliens by collectionManager.unlockedAliensFlow.collectAsState(initial = emptySet())
 
             MaterialTheme {
                 Surface(

@@ -17,7 +17,7 @@ class CollectionManager(private val context: Context) {
     }
 
     val unlockedAliensFlow: Flow<Set<String>> = context.collectionDataStore.data.map { preferences ->
-        preferences[UNLOCKED_ALIENS_KEY] ?: setOf("default") // Default skin is always unlocked
+        preferences[UNLOCKED_ALIENS_KEY] ?: emptySet()
     }
 
     suspend fun unlockAlien(skinId: String) {

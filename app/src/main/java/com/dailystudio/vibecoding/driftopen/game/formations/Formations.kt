@@ -115,6 +115,10 @@ object FormationGenerator {
             val maxBossIndex = ((level - 1) / 10).coerceIn(0, 9)
             val chosenIndex = Random.nextInt(maxBossIndex + 1)
             "boss_$chosenIndex"
+        } else if (type == AlienType.FAST) {
+            "fast"
+        } else if (type == AlienType.NORMAL) {
+            "normal"
         } else "default"
         val patternId = if (type == AlienType.BOSS) {
             Random.nextInt(3) // 0: single, 1: circular, 2: burst

@@ -537,7 +537,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             }
             
             var updatedAlienBullets = newAlienBullets
-            val shootChance = (3 + state.level * 0.5f).toInt()
+            val shootChance = ((3 + state.level * 0.5f) * 0.8f).toInt()
             if (Random.nextInt(100) < shootChance && nextAliens.isNotEmpty()) {
                 val shooterIndex = nextAliens.indices.random()
                 val shooter = nextAliens[shooterIndex]
@@ -551,44 +551,44 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                             when (shooter.patternId) {
                                 1 -> List(8) { i ->
                                     val angle = (i * 45f) * (PI / 180f).toFloat()
-                                    Bullet(shooter.x, shooter.y + 40f, vx = 8f * cos(angle.toDouble()).toFloat(), speed = -8f * sin(angle.toDouble()).toFloat(), type = BulletType.CIRCLE)
+                                    Bullet(shooter.x, shooter.y + 40f, vx = 6.8f * cos(angle.toDouble()).toFloat(), speed = -6.8f * sin(angle.toDouble()).toFloat(), type = BulletType.CIRCLE)
                                 }
-                                2 -> List(7) { i -> Bullet(shooter.x, shooter.y + 40f, vx = (i - 3) * 3f, speed = -12f) }
+                                2 -> List(7) { i -> Bullet(shooter.x, shooter.y + 40f, vx = (i - 3) * 2.55f, speed = -10.2f) }
                                 3 -> {
                                     val dx = state.ship.x - shooter.x
                                     val dy = (state.ship.y - 120f) - shooter.y
                                     val dist = hypot(dx, dy)
                                     if (dist > 0) {
                                         listOf(
-                                            Bullet(shooter.x - 20f, shooter.y + 40f, vx = (dx / dist) * 15f, speed = -(dy / dist) * 15f),
-                                            Bullet(shooter.x + 20f, shooter.y + 40f, vx = (dx / dist) * 15f, speed = -(dy / dist) * 15f)
+                                            Bullet(shooter.x - 20f, shooter.y + 40f, vx = (dx / dist) * 12.75f, speed = -(dy / dist) * 12.75f),
+                                            Bullet(shooter.x + 20f, shooter.y + 40f, vx = (dx / dist) * 12.75f, speed = -(dy / dist) * 12.75f)
                                         )
                                     } else emptyList()
                                 }
-                                4 -> List(3) { i -> Bullet(shooter.x + (i - 1) * 40f, shooter.y + 40f, speed = -8f, type = BulletType.HOMING) }
+                                4 -> List(3) { i -> Bullet(shooter.x + (i - 1) * 40f, shooter.y + 40f, speed = -6.8f, type = BulletType.HOMING) }
                                 else -> if (healthPct < 0.5f) {
                                     listOf(
-                                        Bullet(shooter.x - 60f, shooter.y + 40f, vx = -4f, speed = -8f),
-                                        Bullet(shooter.x - 30f, shooter.y + 60f, vx = -2f, speed = -10f),
-                                        Bullet(shooter.x, shooter.y + 80f, vx = 0f, speed = -12f),
-                                        Bullet(shooter.x + 30f, shooter.y + 60f, vx = 2f, speed = -10f),
-                                        Bullet(shooter.x + 60f, shooter.y + 40f, vx = 4f, speed = -8f)
+                                        Bullet(shooter.x - 60f, shooter.y + 40f, vx = -3.4f, speed = -6.8f),
+                                        Bullet(shooter.x - 30f, shooter.y + 60f, vx = -1.7f, speed = -8.5f),
+                                        Bullet(shooter.x, shooter.y + 80f, vx = 0f, speed = -10.2f),
+                                        Bullet(shooter.x + 30f, shooter.y + 60f, vx = 1.7f, speed = -8.5f),
+                                        Bullet(shooter.x + 60f, shooter.y + 40f, vx = -3.4f, speed = -6.8f)
                                     )
                                 } else {
                                     listOf(
-                                        Bullet(shooter.x - 40f, shooter.y + 40f, speed = -10f),
-                                        Bullet(shooter.x, shooter.y + 60f, speed = -12f),
-                                        Bullet(shooter.x + 40f, shooter.y + 40f, speed = -10f)
+                                        Bullet(shooter.x - 40f, shooter.y + 40f, speed = -8.5f),
+                                        Bullet(shooter.x, shooter.y + 60f, speed = -10.2f),
+                                        Bullet(shooter.x + 40f, shooter.y + 40f, speed = -8.5f)
                                     )
                                 }
                             }
                         }
                         AlienType.BOSS -> when (shooter.patternId) {
-                            1 -> listOf(Bullet(shooter.x, shooter.y + 20f, vx = -3f, speed = -8f), Bullet(shooter.x, shooter.y + 20f, vx = 0f, speed = -10f), Bullet(shooter.x, shooter.y + 20f, vx = 3f, speed = -8f))
-                            2 -> listOf(Bullet(shooter.x, shooter.y + 20f, speed = -12f), Bullet(shooter.x, shooter.y + 50f, speed = -12f))
-                            else -> listOf(Bullet(shooter.x, shooter.y + shooter.height / 2, speed = -10f))
+                            1 -> listOf(Bullet(shooter.x, shooter.y + 20f, vx = -2.55f, speed = -6.8f), Bullet(shooter.x, shooter.y + 20f, vx = 0f, speed = -8.5f), Bullet(shooter.x, shooter.y + 20f, vx = 2.55f, speed = -6.8f))
+                            2 -> listOf(Bullet(shooter.x, shooter.y + 20f, speed = -10.2f), Bullet(shooter.x, shooter.y + 50f, speed = -10.2f))
+                            else -> listOf(Bullet(shooter.x, shooter.y + shooter.height / 2, speed = -8.5f))
                         }
-                        else -> listOf(Bullet(shooter.x, shooter.y + shooter.height / 2, speed = -10f))
+                        else -> listOf(Bullet(shooter.x, shooter.y + shooter.height / 2, speed = -8.5f))
                     }
                     updatedAlienBullets = updatedAlienBullets + shooterNewBullets
                 }

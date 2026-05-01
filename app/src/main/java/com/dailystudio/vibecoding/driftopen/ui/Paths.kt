@@ -45,6 +45,19 @@ object GamePaths {
     )
 
     val alienSkins = mapOf(
+        "normal" to mapOf(
+            AlienType.NORMAL to Path().apply {
+                moveTo(0f, 0.5f); lineTo(-0.5f, -0.25f); lineTo(-0.25f, -0.5f); lineTo(0.25f, -0.5f); lineTo(0.5f, -0.25f); close()
+                moveTo(-0.25f, 0.5f); lineTo(-0.4f, 0.65f); moveTo(0.25f, 0.5f); lineTo(0.4f, 0.65f)
+            }
+        ),
+        "fast" to mapOf(
+            AlienType.FAST to Path().apply {
+                moveTo(0f, -0.5f); lineTo(0.5f, 0f); lineTo(0f, 0.5f); lineTo(-0.5f, 0f); close()
+                moveTo(-0.5f, 0f); lineTo(-0.75f, 0.25f); moveTo(0.5f, 0f); lineTo(0.75f, 0.25f)
+            }
+        ),
+
         "default" to mapOf(
             AlienType.NORMAL to Path().apply {
                 moveTo(0f, 0.5f); lineTo(-0.5f, -0.25f); lineTo(-0.25f, -0.5f); lineTo(0.25f, -0.5f); lineTo(0.5f, -0.25f); close()
