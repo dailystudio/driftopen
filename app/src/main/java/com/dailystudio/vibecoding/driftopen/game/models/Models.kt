@@ -11,7 +11,8 @@ enum class GamePhase {
 enum class GameEvent {
     OPEN_CHEAT_CONSOLE,
     OPEN_HELP,
-    OPEN_COLLECTION
+    OPEN_COLLECTION,
+    OPEN_SETTINGS
 }
 
 enum class CheatType {
@@ -40,7 +41,8 @@ data class GameState(
     val bombEffectFrames: Int = 0,
     val phase: GamePhase = GamePhase.START,
     val screenWidth: Float = 0f,
-    val screenHeight: Float = 0f
+    val screenHeight: Float = 0f,
+    val difficulty: String = "easy"
 )
 
 data class Explosion(

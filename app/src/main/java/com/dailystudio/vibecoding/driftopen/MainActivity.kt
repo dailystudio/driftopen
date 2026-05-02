@@ -29,6 +29,7 @@ import com.dailystudio.vibecoding.driftopen.game.models.GameEvent
 import com.dailystudio.vibecoding.driftopen.ui.CheatActivity
 import com.dailystudio.vibecoding.driftopen.ui.HelpActivity
 import com.dailystudio.vibecoding.driftopen.ui.CollectionActivity
+import com.dailystudio.vibecoding.driftopen.ui.SettingsActivity
 
 class MainActivity : ComponentActivity() {
 
@@ -44,6 +45,7 @@ class MainActivity : ComponentActivity() {
 
             val gameState by engine.gameState.collectAsState()
             val highScore by scoreManager.highScoreFlow.collectAsState(initial = 0)
+            val difficulty by scoreManager.difficultyFlow.collectAsState(initial = "easy")
 
             LaunchedEffect(engine) {
                 engine.events.collect { event ->
@@ -57,6 +59,9 @@ class MainActivity : ComponentActivity() {
                         GameEvent.OPEN_COLLECTION -> {
                             context.startActivity(Intent(context, CollectionActivity::class.java))
                         }
+                        GameEvent.OPEN_SETTINGS -> {
+                            context.startActivity(Intent(context, SettingsActivity::class.java))
+                        }
                     }
                 }
             }
@@ -68,6 +73,9 @@ class MainActivity : ComponentActivity() {
             // Sync high score to engine
             LaunchedEffect(highScore) {
                 engine.setHighScore(highScore)
+            }
+            LaunchedEffect(difficulty) {
+                engine.setDifficulty(difficulty)
             }
 
             // Auto-save high score

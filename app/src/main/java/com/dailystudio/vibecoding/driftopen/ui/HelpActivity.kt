@@ -169,7 +169,7 @@ fun HelpScreen(onExit: () -> Unit) {
                 modifier = Modifier.padding(bottom = 12.dp)
             )
             PowerUpItem(PowerUpType.SHIELD, "SHIELD", "Temporary protection.", Color.Cyan)
-            PowerUpItem(PowerUpType.INVINCIBILITY, "INVINCIBILITY", "Absolute god mode.", Color(0xFFFFD700))
+            PowerUpItem(PowerUpType.INVINCIBILITY, "INVINCIBILITY", "Absolute god mode.", Color(0xFFFF9900))
             PowerUpItem(PowerUpType.DOUBLE_FIRE, "DOUBLE", "Double fire power.", Color.Green)
             PowerUpItem(PowerUpType.RAPID_FIRE, "RAPID", "Increased fire rate.", Color.Yellow)
             PowerUpItem(PowerUpType.SPREAD_SHOT, "SPREAD", "Triple fire pattern.", Color.Magenta)
@@ -244,8 +244,15 @@ fun PowerUpItem(type: PowerUpType, name: String, desc: String, color: Color) {
     ) {
         Canvas(modifier = Modifier.size(30.dp)) {
             val r = size.width / 2
+            val innerCircleColor = when(type) {
+                PowerUpType.HOMING_MISSILES,
+                PowerUpType.RAPID_FIRE,
+                PowerUpType.SHIELD,
+                PowerUpType.DOUBLE_FIRE -> Color.Black
+                else -> Color.White
+            }
             drawCircle(color, radius = r)
-            drawCircle(Color.White, radius = r * 0.7f, style = Stroke(width = 2f))
+            drawCircle(innerCircleColor, radius = r * 0.7f, style = Stroke(width = 2f))
         }
         Spacer(modifier = Modifier.width(16.dp))
         Text(text = name, color = color, fontWeight = FontWeight.Bold, modifier = Modifier.width(100.dp))

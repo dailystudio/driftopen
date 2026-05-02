@@ -291,12 +291,18 @@ fun GameScreen(engine: GameEngine) {
                     PowerUpType.LASER_BEAM -> Color.Blue
                     PowerUpType.HOMING_MISSILES -> Color.White
                     PowerUpType.EXPLOSIVE_BOMBS -> Color(0xFFFF4500)
-                    PowerUpType.INVINCIBILITY -> Color(0xFFFFD700) // Gold
+                    PowerUpType.INVINCIBILITY -> Color(0xFFFF9900)
                 }
+                val innerCircleColor = when(powerUp.type) {
+                    PowerUpType.HOMING_MISSILES, 
+                    PowerUpType.RAPID_FIRE, 
+                    PowerUpType.SHIELD, 
+                    PowerUpType.DOUBLE_FIRE -> Color.Black
+                    else -> Color.White
+                }
+                
                 drawCircle(color, radius = powerUp.radius, center = Offset(powerUp.x, powerUp.y))
-                drawCircle(Color.White, radius = powerUp.radius * 0.7f, center = Offset(powerUp.x, powerUp.y), style = Stroke(width = 2f))
-            }
-
+                drawCircle(innerCircleColor, radius = powerUp.radius * 0.7f, center = Offset(powerUp.x, powerUp.y), style = Stroke(width = 2f))            }
             // Draw explosions
             state.explosions.forEach { explosion ->
                 drawCircle(
@@ -506,6 +512,13 @@ fun GameScreen(engine: GameEngine) {
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4B0082))
                         ) {
                             Text("COLLECTION", color = Color.White)
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { engine.openSettings() },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2E8B57))
+                        ) {
+                            Text("SETTINGS", color = Color.White)
                         }
                         Spacer(modifier = Modifier.height(16.dp))
                         Button(

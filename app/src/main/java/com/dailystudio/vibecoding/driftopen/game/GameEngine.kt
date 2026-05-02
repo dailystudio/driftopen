@@ -75,6 +75,16 @@ class GameEngine(private val soundManager: SoundManager? = null) {
         }
     }
 
+    fun openSettings() {
+        scope.launch {
+            _events.emit(GameEvent.OPEN_SETTINGS)
+        }
+    }
+
+    fun setDifficulty(difficulty: String) {
+        _gameState.update { it.copy(difficulty = difficulty) }
+    }
+
     fun setHighScore(score: Int) {
         _gameState.update { it.copy(highScore = score) }
     }
@@ -537,7 +547,15 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             }
             
             var updatedAlienBullets = newAlienBullets
-            val shootChance = ((3 + state.level * 0.5f) * 0.8f).toInt()
+            
+            // Difficulty factors relative to "Original"
+            val (speedMult, densityMult, scoreMult) = when(state.difficulty) {
+                "normal" -> Triple(0.95f, 0.95f, 1.2f)
+                "hard" -> Triple(1.05f, 1.05f, 1.5f)
+                else -> Triple(0.85f, 0.8f, 1.0f) // easy
+            }
+
+            val shootChance = ((3 + state.level * 0.5f) * densityMult).toInt()
             if (Random.nextInt(100) < shootChance && nextAliens.isNotEmpty()) {
                 val shooterIndex = nextAliens.indices.random()
                 val shooter = nextAliens[shooterIndex]
@@ -551,44 +569,44 @@ class GameEngine(private val soundManager: SoundManager? = null) {
                             when (shooter.patternId) {
                                 1 -> List(8) { i ->
                                     val angle = (i * 45f) * (PI / 180f).toFloat()
-                                    Bullet(shooter.x, shooter.y + 40f, vx = 6.8f * cos(angle.toDouble()).toFloat(), speed = -6.8f * sin(angle.toDouble()).toFloat(), type = BulletType.CIRCLE)
+                                    Bullet(shooter.x, shooter.y + 40f, vx = (8f * speedMult) * cos(angle.toDouble()).toFloat(), speed = -(8f * speedMult) * sin(angle.toDouble()).toFloat(), type = BulletType.CIRCLE)
                                 }
-                                2 -> List(7) { i -> Bullet(shooter.x, shooter.y + 40f, vx = (i - 3) * 2.55f, speed = -10.2f) }
+                                2 -> List(7) { i -> Bullet(shooter.x, shooter.y + 40f, vx = (i - 3) * (3f * speedMult), speed = -(12f * speedMult)) }
                                 3 -> {
                                     val dx = state.ship.x - shooter.x
                                     val dy = (state.ship.y - 120f) - shooter.y
                                     val dist = hypot(dx, dy)
                                     if (dist > 0) {
                                         listOf(
-                                            Bullet(shooter.x - 20f, shooter.y + 40f, vx = (dx / dist) * 12.75f, speed = -(dy / dist) * 12.75f),
-                                            Bullet(shooter.x + 20f, shooter.y + 40f, vx = (dx / dist) * 12.75f, speed = -(dy / dist) * 12.75f)
+                                            Bullet(shooter.x - 20f, shooter.y + 40f, vx = (dx / dist) * (15f * speedMult), speed = -(dy / dist) * (15f * speedMult)),
+                                            Bullet(shooter.x + 20f, shooter.y + 40f, vx = (dx / dist) * (15f * speedMult), speed = -(dy / dist) * (15f * speedMult))
                                         )
                                     } else emptyList()
                                 }
-                                4 -> List(3) { i -> Bullet(shooter.x + (i - 1) * 40f, shooter.y + 40f, speed = -6.8f, type = BulletType.HOMING) }
+                                4 -> List(3) { i -> Bullet(shooter.x + (i - 1) * 40f, shooter.y + 40f, speed = -(8f * speedMult), type = BulletType.HOMING) }
                                 else -> if (healthPct < 0.5f) {
                                     listOf(
-                                        Bullet(shooter.x - 60f, shooter.y + 40f, vx = -3.4f, speed = -6.8f),
-                                        Bullet(shooter.x - 30f, shooter.y + 60f, vx = -1.7f, speed = -8.5f),
-                                        Bullet(shooter.x, shooter.y + 80f, vx = 0f, speed = -10.2f),
-                                        Bullet(shooter.x + 30f, shooter.y + 60f, vx = 1.7f, speed = -8.5f),
-                                        Bullet(shooter.x + 60f, shooter.y + 40f, vx = -3.4f, speed = -6.8f)
+                                        Bullet(shooter.x - 60f, shooter.y + 40f, vx = -(4f * speedMult), speed = -(8f * speedMult)),
+                                        Bullet(shooter.x - 30f, shooter.y + 60f, vx = -(2f * speedMult), speed = -(10f * speedMult)),
+                                        Bullet(shooter.x, shooter.y + 80f, vx = 0f, speed = -(12f * speedMult)),
+                                        Bullet(shooter.x + 30f, shooter.y + 60f, vx = (2f * speedMult), speed = -(10f * speedMult)),
+                                        Bullet(shooter.x + 60f, shooter.y + 40f, vx = (4f * speedMult), speed = -(8f * speedMult))
                                     )
                                 } else {
                                     listOf(
-                                        Bullet(shooter.x - 40f, shooter.y + 40f, speed = -8.5f),
-                                        Bullet(shooter.x, shooter.y + 60f, speed = -10.2f),
-                                        Bullet(shooter.x + 40f, shooter.y + 40f, speed = -8.5f)
+                                        Bullet(shooter.x - 40f, shooter.y + 40f, speed = -(10f * speedMult)),
+                                        Bullet(shooter.x, shooter.y + 60f, speed = -(12f * speedMult)),
+                                        Bullet(shooter.x + 40f, shooter.y + 40f, speed = -(10f * speedMult))
                                     )
                                 }
                             }
                         }
                         AlienType.BOSS -> when (shooter.patternId) {
-                            1 -> listOf(Bullet(shooter.x, shooter.y + 20f, vx = -2.55f, speed = -6.8f), Bullet(shooter.x, shooter.y + 20f, vx = 0f, speed = -8.5f), Bullet(shooter.x, shooter.y + 20f, vx = 2.55f, speed = -6.8f))
-                            2 -> listOf(Bullet(shooter.x, shooter.y + 20f, speed = -10.2f), Bullet(shooter.x, shooter.y + 50f, speed = -10.2f))
-                            else -> listOf(Bullet(shooter.x, shooter.y + shooter.height / 2, speed = -8.5f))
+                            1 -> listOf(Bullet(shooter.x, shooter.y + 20f, vx = -(3f * speedMult), speed = -(8f * speedMult)), Bullet(shooter.x, shooter.y + 20f, vx = 0f, speed = -(10f * speedMult)), Bullet(shooter.x, shooter.y + 20f, vx = (3f * speedMult), speed = -(8f * speedMult)))
+                            2 -> listOf(Bullet(shooter.x, shooter.y + 20f, speed = -(12f * speedMult)), Bullet(shooter.x, shooter.y + 50f, speed = -(12f * speedMult)))
+                            else -> listOf(Bullet(shooter.x, shooter.y + shooter.height / 2, speed = -(10f * speedMult)))
                         }
-                        else -> listOf(Bullet(shooter.x, shooter.y + shooter.height / 2, speed = -8.5f))
+                        else -> listOf(Bullet(shooter.x, shooter.y + shooter.height / 2, speed = -(10f * speedMult)))
                     }
                     updatedAlienBullets = updatedAlienBullets + shooterNewBullets
                 }
@@ -654,11 +672,12 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             for (alien in nextAliens) {
                 if (alien.health <= 0) {
                     soundManager?.playSound("explosion")
-                    scoreGain += when(alien.type) {
+                    val basePoints = when(alien.type) {
                         AlienType.SUPERBOSS -> 10000
                         AlienType.BOSS -> 500
                         else -> 100
                     }
+                    scoreGain += (basePoints * scoreMult).toInt()
                     currentExplosions.add(Explosion(alien.x, alien.y, alien.color))
                     if (Random.nextInt(100) < 15) {
                         currentPowerUps.add(PowerUp(alien.x, alien.y, PowerUpType.values().random()))
@@ -733,7 +752,7 @@ class GameEngine(private val soundManager: SoundManager? = null) {
             }
 
             if (aliveAliens.isEmpty() && state.aliens.isNotEmpty()) {
-                nextLevel = (nextLevel + 1).coerceAtMost(99)
+                nextLevel = (nextLevel + 1).coerceAtMost(100)
                 val newLevelAliens = createAliens(state.screenWidth, nextLevel)
                 aliveAliens.addAll(newLevelAliens)
                 nextFormationX = getInitialFormationX(state.screenWidth, nextLevel)
